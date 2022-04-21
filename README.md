@@ -17,6 +17,8 @@ The GameOBECocosDemo sample code provides functions such as creating a room, joi
 Example: Sample code package. Import sample code packages to run, reference, or use.   
 SDK: Huawei provides a set of SDKs for online game services.
 
+Visit [wiki](https://github.com/AppGalleryConnect/agc-GameOBE-demos/wiki) for more documents.
+
 <a id="Installation"></a>
 
 ## Installation
