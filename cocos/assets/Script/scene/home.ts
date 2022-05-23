@@ -67,7 +67,7 @@ export default class Home extends cc.Component {
             global.playerName = Util.mockPlayerName();
         }).catch((e) => {
             // 鉴权失败
-            Util.printLog("鉴权失败");
+            Dialog.open("提示", "鉴权失败" + Util.errorMessage(e));
         });
     }
 
@@ -79,7 +79,7 @@ export default class Home extends cc.Component {
         if (Util.isInited()) {
             cc.director.loadScene("hall")
         } else {
-            Util.printLog("鉴权失败");
+            Dialog.open("提示", "鉴权失败，请重新刷新页面");
         }
     }
 

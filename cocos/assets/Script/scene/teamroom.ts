@@ -30,12 +30,6 @@ export enum Player {
     three = 3,// 玩家3
 }
 
-export enum PlayerStatus {
-    one = 0,  // 玩家1 0未准备，1已准备
-    two = 0,  // 玩家2 0未准备，1已准备
-    three = 0,// 玩家3 0未准备，1已准备
-}
-
 const {ccclass, property} = cc._decorator;
 
 @ccclass
@@ -133,8 +127,9 @@ export default class TeamRoom extends cc.Component {
                         }
                     } else {
                         // 房主
-                        this.ownerName.string = player.customPlayerProperties ?
-                            player.customPlayerProperties : player.playerId;
+                        let playerProperties = JSON.parse(player.customPlayerProperties);
+                        this.ownerName.string = playerProperties["playerName"] ?
+                            playerProperties["playerName"] : player.playerId;
                     }
                 }
                 if (player.playerId === roomInfo.ownerId) {
@@ -162,44 +157,40 @@ export default class TeamRoom extends cc.Component {
 
     private setYellowPlayer(player, playerNo: number) {
         let isPlayerStatus = player.customPlayerStatus === 1;
-        let playerStatus = player.customPlayerStatus;
+        let playerProperties = JSON.parse(player.customPlayerProperties);
+        let playerName = playerProperties["playerName"];
         switch (playerNo) {
             case 1:
-                // @ts-ignore
-                PlayerStatus.one = playerStatus;
                 if (player.playerId === global.playerId) {
                     this.unReadyOneBtn.active = isPlayerStatus;
                     this.readyOneBtn.active = !(isPlayerStatus);
                 }
                 this.playerOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
-                this.playerOneName.string = player.customPlayerProperties ?
-                    player.customPlayerProperties : player.playerId;
+                this.playerOneName.string = playerName ?
+                    playerName : player.playerId;
                 break;
             case 3:
-                // @ts-ignore
-                PlayerStatus.three = playerStatus;
                 if (player.playerId === global.playerId) {
                     this.unReadyThreeBtn.active = isPlayerStatus;
                     this.readyThreeBtn.active = !(isPlayerStatus);
                 }
                 this.playerThreeStatus.string = isPlayerStatus ? "已准备" : "未准备";
-                this.playerThreeName.string = player.customPlayerProperties ?
-                    player.customPlayerProperties : player.playerId;
+                this.playerThreeName.string = playerName ?
+                    playerName : player.playerId;
                 break;
         }
     }
 
     private setRedPlayer(player) {
-        // @ts-ignore
-        PlayerStatus.two = player.customPlayerStatus;
         let isPlayerStatus = player.customPlayerStatus === 1;
         if (player.playerId === global.playerId) {
             this.unReadyTwoBtn.active = isPlayerStatus;
             this.readyTwoBtn.active = !(isPlayerStatus);
         }
         this.playerTwoStatus.string = isPlayerStatus ? "已准备" : "未准备";
-        this.playerTwoName.string = player.customPlayerProperties ?
-            player.customPlayerProperties : player.playerId;
+        let playerProperties = JSON.parse(player.customPlayerProperties);
+        this.playerTwoName.string =  playerProperties["playerName"] ?
+            playerProperties["playerName"] : player.playerId;
     }
 
     initListener() {
@@ -252,7 +243,7 @@ export default class TeamRoom extends cc.Component {
             Util.printLog("退出房间成功");
         }).catch((e) => {
             // 退出房间失败
-            Util.printLog("退出房间失败");
+            Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
         });
     }
 
@@ -280,12 +271,12 @@ export default class TeamRoom extends cc.Component {
     ready() {
         Util.printLog("准备");
         let ready = 1;
-        global.player.setCustomStatus(ready).then(() => {
+        global.player.updateCustomStatus(ready).then(() => {
             // 修改玩家自定义状态
             this.initRoomView();
         }).catch((e) => {
             // 修改玩家自定义状态失败
-            Util.printLog("修改玩家自定义状态失败");
+            Dialog.open("提示", "准备就绪失败" + Util.errorMessage(e));
         });
     }
 
@@ -293,12 +284,12 @@ export default class TeamRoom extends cc.Component {
     cancelReady() {
         Util.printLog("取消准备");
         let unready = 0;
-        global.player.setCustomStatus(unready).then(() => {
+        global.player.updateCustomStatus(unready).then(() => {
             // 修改玩家自定义状态
             this.initRoomView();
         }).catch((e) => {
             // 修改玩家自定义状态失败
-            Util.printLog("修改玩家自定义状态失败");
+            Dialog.open("提示", "取消准备失败" + Util.errorMessage(e));
         });
     }
 
@@ -324,7 +315,7 @@ export default class TeamRoom extends cc.Component {
                     Util.printLog("开始帧同步成功");
                 }).catch((e) => {
                     // 开始帧同步失败
-                    Util.printLog("开始帧同步失败");
+                    Dialog.open("提示", "开始帧同步失败" + Util.errorMessage(e));
                 });
             }
         });

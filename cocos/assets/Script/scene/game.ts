@@ -33,12 +33,11 @@ import {
     calcFrame,
     clearFrames,
     Cloud,
-    cloudsList,
+    cloudsList, frameSyncBulletList,
     FrameSyncCmd,
     frameSyncPlayerList,
     pushFrames,
     reCalcFrameState,
-    requestFrame
 } from "../function/FrameSync";
 import FrameSyncView from "../comp/FrameSyncView";
 import ReopenGame from "../comp/ReopenGame";
@@ -46,6 +45,12 @@ import Dialog from "../comp/Dialog";
 import Reloading from "../comp/Reloading";
 import {PlayerInfo, Room} from "../../GOBE/GOBE";
 import {CloudData} from "../function/CloudList";
+import GameCanvas from "../comp/GameCanvas";
+import {BulletData} from "../function/BulletList";
+import {PlayerData} from "../function/PlayerList";
+import Circle from "../comp/Circle";
+
+
 
 const {ccclass, property} = cc._decorator;
 let framesId = 0;
@@ -72,6 +77,10 @@ export default class Game extends cc.Component {
     @property(FrameSyncView)
     public frameSyncView: FrameSyncView = null;
 
+    // 子弹预制件
+    @property(cc.Prefab)
+    bulletPrefab: cc.Prefab = null;
+
     // 云朵初始帧
     public randomFrame = 100;
 
@@ -91,6 +100,7 @@ export default class Game extends cc.Component {
         this.frameSyncView.onLeftButtonClick = () => this.sendFrame(FrameSyncCmd.left);
         this.frameSyncView.onRightButtonClick = () => this.sendFrame(FrameSyncCmd.right);
         this.frameSyncView.onStopFrameButtonClick = () => this.stopGame();
+        this.frameSyncView.onFireButtonClick = () => this.sendFireFrame();
         this.frameSyncView.setEnableButtons(global.playerId === global.room.ownerId);
         // 设置重开一局游戏弹框
         const reopenGameNode = cc.instantiate(this.reopenGamePrefab) as cc.Node;
@@ -141,6 +151,7 @@ export default class Game extends cc.Component {
         }).catch((e) => {
             // 停止帧同步失败
             Util.printLog("停止帧同步失败");
+            Dialog.open("提示", "停止帧同步失败" + Util.errorMessage(e));
         });
     }
 
@@ -161,17 +172,18 @@ export default class Game extends cc.Component {
             cc.director.loadScene("hall");
         });
     }
-
     // SDK 发送帧消息
     sendFrame(cmd: FrameSyncCmd) {
         let playerList = frameSyncPlayerList.players;
         const playerId = global.playerId;
         let x: number = 0;
         let y: number = 0;
+        let rotation: number = 0;
         playerList.forEach((p, i) => {
             if (p.id == playerId) {
                 x = p.x;
                 y = p.y;
+                rotation = p.rotation;
                 cmd === FrameSyncCmd.up && (y >= 10 ? y = 10 : y++);
                 cmd === FrameSyncCmd.down && (y <= 0 ? y = 0 : y--);
                 cmd === FrameSyncCmd.left && (x <= 0 ? x = 0 : x--);
@@ -180,7 +192,48 @@ export default class Game extends cc.Component {
             }
         });
         const data: Object = {
-            cmd, x, y
+            cmd, x, y, rotation
+        };
+        let frameData: string = JSON.stringify(data);
+        global.room.sendFrame(frameData);
+    }
+
+    /**
+     * 攻击指令帧发送
+     */
+    sendFireFrame() {
+        let playerId = global.playerId;
+        // 当前玩家信息
+        let playerData = frameSyncPlayerList.players.find(p => p.id === playerId);
+        let x: number = 0;
+        let y: number = 0;
+        let rotation: number = playerData.rotation;
+        let bulletId: number = global.bulletId ++;
+        // 为了计算子弹x、y实际大小，需要获取组件“GameCanvas”的属性“tileSize”
+        let parent = cc.find('Canvas/Content/FrameSync/GameCanvas');
+        const gameCanvas = parent.getComponent(GameCanvas);
+        let tileSize = gameCanvas.tileSize;
+        // 计算x、y实际大小
+        x = playerData.x * tileSize + tileSize / 2;
+        y= playerData.y * tileSize + tileSize / 2;
+        let divergeSize = 30; // 子弹在飞机头上方一段距离生成。
+        switch (playerData.rotation) {
+            case 0: // 向上
+                y = y + divergeSize;
+                break;
+            case 180: // 向下
+                y = y - divergeSize;
+                break;
+            case 90: // 向左
+                x = x - divergeSize;
+                break;
+            case -90: // 向右
+                x = x + divergeSize;
+                break;
+        }
+        let cmd: FrameSyncCmd = FrameSyncCmd.fire;
+        const data: Object = {
+            cmd, playerId, bulletId, x, y, rotation
         };
         let frameData: string = JSON.stringify(data);
         global.room.sendFrame(frameData);
@@ -221,7 +274,7 @@ export default class Game extends cc.Component {
         if ((currentRoomFrameId >= this.randomFrame) && (currentRoomFrameId % this.frequency === 0)) {
             // 申请随机数，解析随机数，加入云朵
             // @ts-ignore
-            const random = new window.GOBE.Random(Math.floor(seed)).getNumber();
+            const random = new window.GOBE.RandomUtils(Math.floor(seed)).getNumber();
             let speed = Math.floor(random * 100);
             let y = Math.floor(random * 10000 - speed * 100);
             let x = Math.floor(random * 1000000 - speed * 10000 - y * 100);
@@ -235,21 +288,79 @@ export default class Game extends cc.Component {
         }
     }
 
+    /**
+     * 接收帧处理
+     * @param frame
+     * @private
+     */
     private recvFrameHandle(frame: GOBE.ServerFrameMessage) {
         framesId = frame.currentRoomFrameId;
+        if(framesId % 150 == 0){
+            //显示圆圈，持续5秒后消失
+            let circle = cc.find('Canvas/Content/FrameSync/GameCanvas/CircleSpecial');
+            if(circle.active == true){
+                circle.active = false;
+            }else{
+                circle.active = true;
+                circle.color = cc.color(237,247,7,255);
+            }
+
+        }
+        // 更新子弹
+        if(framesId % 10 == 0){
+            this.updateBulletFly();
+        }
         // 获取随机云朵
         let seed = (frame.ext) ? frame.ext.seed : null;
         this.getRandomCloud(framesId, seed);
         if (frame.frameInfo && frame.frameInfo.length > 0) {
             if (frame.frameInfo[0].playerId !== "0") {
-                Util.printLog(JSON.stringify(frame.frameInfo));
+                Util.printLog(JSON.stringify(frame.frameInfo))
                 pushFrames(frame);
                 calcFrame(frame);
             }
         }
     }
 
-    // ====================SDK广播====================
+    /**
+     * 更新子弹飞行
+     * @private
+     */
+    private updateBulletFly(){
+        let bulletList = frameSyncBulletList.bullets;
+        bulletList.forEach((bullet, i) => {
+            // 计算移动后的 x、y
+            let x: number = 0;
+            let y: number = 0;
+            let speed: number = 15;
+            switch (bullet.rotation) {
+                case 0: // 向上
+                    y = bullet.y + speed;
+                    x = bullet.x;
+                    break;
+                case 180: // 向下
+                    y = bullet.y - speed;
+                    x = bullet.x;
+                    break;
+                case 90: // 向左
+                    x = bullet.x - speed;
+                    y = bullet.y;
+                    break;
+                case -90: // 向右
+                    x = bullet.x + speed;
+                    y = bullet.y;
+                    break;
+            }
+            bullet.x = x;
+            bullet.y = y;
+        });
+
+    }
+
+
+
+
+// ====================SDK广播====================
     onRecvFrame(frame: GOBE.ServerFrameMessage | GOBE.ServerFrameMessage[]) {
         if (frame instanceof Array) {
             if (frame && frame.length > 0) {
@@ -298,11 +409,11 @@ export default class Game extends cc.Component {
 
     private unready() {
         global.state = 0;
-        global.player.setCustomStatus(0).then(() => {
+        global.player.updateCustomStatus(0).then(() => {
             Util.printLog("修改玩家自定义状态成功");
         }).catch((e) => {
             // 修改玩家自定义状态失败
-            Util.printLog("修改玩家自定义状态失败");
+            Util.printLog("取消准备失败");
         });
     }
 
@@ -313,7 +424,7 @@ export default class Game extends cc.Component {
             Util.printLog("退出房间成功");
         }).catch((e) => {
             // 退出房间失败
-            Util.printLog("退出房间失败");
+            Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
         });
     }
 
@@ -338,8 +449,6 @@ export default class Game extends cc.Component {
             global.room.update().then((room) => {
                 let isInRoom = this.isInRoom(room);
                 if (isInRoom) {
-                    // 需要补帧
-                    requestFrame(framesId);
                     Reloading.close();
                 } else {
                     cc.director.loadScene("hall");
@@ -377,7 +486,7 @@ export default class Game extends cc.Component {
         if (players) {
             for (let i = 0; i < players.length; ++i) {
                 if (players[i].playerId === global.playerId) {
-                    return true
+                    return true;
                 }
             }
         }
@@ -387,4 +496,5 @@ export default class Game extends cc.Component {
     reLogin() {
         global.client.init();
     }
+
 }

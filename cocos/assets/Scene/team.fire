@@ -3767,6 +3767,9 @@
     "teamCodeEditBox": {
       "__id__": 30
     },
+    "dialogPrefab": {
+      "__uuid__": "8d4d7cf6-f7f4-41bf-831c-9b90a52ab80d"
+    },
     "_id": "a95DoRex1I36TW/yBFSrqH"
   }
 ]

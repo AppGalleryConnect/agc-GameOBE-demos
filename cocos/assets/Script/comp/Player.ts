@@ -35,7 +35,9 @@
 //  - [English] http://www.cocos2d-x.org/docs/creator/manual/en/scripting/life-cycle-callbacks.html
 
 import global from "../../global";
-import {Team} from "../function/FrameSync";
+import {frameSyncPlayerList, frameSyncPlayerInitList, Team, CollideTagEnum, FrameSyncCmd} from "../function/FrameSync";
+import {PlayerInfo} from "../../GOBE/GOBE";
+import {PlayerData} from "../function/PlayerList";
 
 const {ccclass, property} = cc._decorator;
 
@@ -51,7 +53,14 @@ export default class Player extends cc.Component {
     @property(cc.Sprite)
     icon2Sprite: cc.Sprite = null;
 
+    public cloudSize = 36;
+    // 组件需要记录玩家id，后面有用
+    playerId: string;
+
     public initPlayer(id: string, rotation: number, x = 0, y = 0, playerTeamId: string) {
+
+        this.playerId = id;
+
         if ((playerTeamId == null && id === global.playerId) || (playerTeamId != null && playerTeamId === Team.red)) {
             this.icon1Sprite.node.active = true;
             this.icon2Sprite.node.active = false;
@@ -69,5 +78,21 @@ export default class Player extends cc.Component {
         this.node.x = x;
         this.node.y = y;
     }
+
+    onCollisionEnter (other, self) {
+        if(other.tag == CollideTagEnum.bullet){
+            // 飞机被子弹击中后回到初始化位置
+            let otherTag: number = other.tag; // 碰到了谁
+            let selfTag: number = self.tag; // 自己的碰撞标签
+            let cmd: FrameSyncCmd = FrameSyncCmd.collide;
+            let playerId: string = this.playerId;
+            const data: Object = {
+                cmd, otherTag, selfTag, playerId
+            };
+            let frameData: string = JSON.stringify(data);
+            global.room.sendFrame(frameData);
+        }
+    }
+
 
 }

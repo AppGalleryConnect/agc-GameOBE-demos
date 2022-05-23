@@ -19,10 +19,12 @@ import * as Util from "./util";
 export default {
     openId: Util.mockOpenId(), // 区别不同用户
     grantType: "client_credentials",
+    asymmetric: false,
 
     gameId: "",
     clientId: "",
     clientSecret: "",
     matchCode: "",
+    asymmetricMatchCode:"",
  
 };

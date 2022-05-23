@@ -27,9 +27,11 @@
  *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
  */
 
-import {PlayerData, PlayerList} from "./PlayerList";
+import {PlayerList, PlayerData} from "./PlayerList";
 import global from "../../global";
 import {CloudList} from "./CloudList";
+import {BulletData, BulletList} from "./BulletList";
+import Circle from "../comp/Circle";
 
 let frames: GOBE.ServerFrameMessage[] = [];
 
@@ -38,6 +40,14 @@ export enum FrameSyncCmd {
     down = 2,
     left = 3,
     right = 4,
+    fire = 5,
+    collide = 7, // 碰撞指令
+}
+// 碰撞体tag(要和组件中属性保持一致.因为不知道如何重组件中获取.所以在这里定义)
+export enum CollideTagEnum {
+    bullet = 0,
+    circle = 1,
+    aircraft = 2,
 }
 
 export enum Team {
@@ -58,11 +68,28 @@ export interface Cloud {
     speed: 0;
 }
 
+export interface Bullet {
+    playerId: "",
+    bulletId: 0,
+    x: 0,
+    y: 0,
+    rotation: 0,
+}
+export const frameSyncBulletList: BulletList<Bullet> = {
+    bullets: []
+};
+
 export const cloudsList: CloudList<Cloud> = {
     clouds: []
 };
 
 export const frameSyncPlayerList: PlayerList<Player> = {
+    players: []
+};
+
+
+// 记录玩家初始化的位置，以便飞机被子弹击中后回到初始化位置
+export const frameSyncPlayerInitList: PlayerList<Player> = {
     players: []
 };
 
@@ -112,6 +139,7 @@ function initPlayer(x: number, y: number, playerId: string, rotation: number, cm
         },
     };
     frameSyncPlayerList.players.push(player);
+    frameSyncPlayerInitList.players.push(player);
 }
 
 function roomMatch(redTeamId: any, roomInfo) {
@@ -179,20 +207,68 @@ function setPlayerCMD(id: string, cmd: FrameSyncCmd, x: number, y: number) {
     cmd === FrameSyncCmd.down && (player.rotation = 180);
     cmd === FrameSyncCmd.left && (player.rotation = 90);
     cmd === FrameSyncCmd.right && (player.rotation = -90);
+
 }
+
+/**
+ * 创建子弹数据
+ * @param obj
+ */
+function createBulletData(obj) {
+    const bullet: BulletData<Bullet> = {
+        playerId: obj["playerId"],
+        bulletId: obj["bulletId"],
+        x: obj["x"],
+        y: obj["y"],
+        rotation: obj["rotation"],
+    };
+    frameSyncBulletList.bullets.push(bullet);
+}
+
+
+
+function handleCollide(obj) {
+    // 圆圈和飞机的碰撞
+    if(obj["otherTag"] === CollideTagEnum.aircraft && obj["selfTag"] === CollideTagEnum.circle){
+        let circle = cc.find('Canvas/Content/FrameSync/GameCanvas/CircleSpecial');
+        const circleTs = circle.getComponent(Circle);
+        circleTs.changeColor();
+    }
+    // 子弹碰撞飞机(飞机发出的指令) - 飞机回到原点
+    if (obj["selfTag"] === CollideTagEnum.aircraft && obj["otherTag"] === CollideTagEnum.bullet){
+        const playerInit = frameSyncPlayerInitList.players.find(p => p.id === obj["playerId"]) || {state: {}} as PlayerData<Player>;
+        const player = frameSyncPlayerList.players.find(p => p.id === obj["playerId"]) || {state: {}} as PlayerData<Player>;
+        player.x = playerInit.x;
+        player.y = playerInit.y;
+    }
+    // 子弹碰撞飞机(子弹发出的指令) - 子弹销毁
+    if (obj["selfTag"] === CollideTagEnum.bullet && obj["otherTag"] === CollideTagEnum.aircraft){
+        frameSyncBulletList.bullets = frameSyncBulletList.bullets.filter(item => !(item.playerId === obj["playerId"]
+            && item.bulletId === obj["bulletId"]));
+    }
+}
+
 
 export function calcFrame(frame: GOBE.ServerFrameMessage) {
     if (frame.currentRoomFrameId === 1) {
         setDefaultFrameState();
     }
-
     if (frame.frameInfo && frame.frameInfo.length > 0) {
         frame.frameInfo.forEach(frameItem => {
             let frameData: string[] = frameItem.data;
             if (frameData && frameData.length > 0) {
                 frameData.forEach(data => {
                     let obj = JSON.parse(data);
-                    setPlayerCMD(frameItem.playerId, obj["cmd"], obj["x"], obj["y"]);
+                    switch (obj["cmd"]) {
+                        case FrameSyncCmd.fire:
+                            createBulletData(obj);
+                            break;
+                        case FrameSyncCmd.collide:
+                            handleCollide(obj);
+                            break;
+                        default:
+                            setPlayerCMD(frameItem.playerId, obj["cmd"], obj["x"], obj["y"]);
+                    }
                 });
             }
         });

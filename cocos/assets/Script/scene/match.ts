@@ -124,7 +124,7 @@ export default class Match extends cc.Component {
         }).catch((e) => {
             Reloading.close();
             this.lockSubmit = false;
-            Util.printLog("房间匹配失败");
+            Dialog.open("提示", "房间匹配失败" + Util.errorMessage(e));
         });
     }
 }

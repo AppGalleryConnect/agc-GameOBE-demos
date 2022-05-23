@@ -1624,7 +1624,7 @@
     "_prefab": {
       "__id__": 45
     },
-    "_opacity": 255,
+    "_opacity": 0,
     "_color": {
       "__type__": "cc.Color",
       "r": 255,
@@ -2132,6 +2132,9 @@
     },
     "entryTeamBtn": {
       "__id__": 35
+    },
+    "dialogPrefab": {
+      "__uuid__": "8d4d7cf6-f7f4-41bf-831c-9b90a52ab80d"
     },
     "_id": "1316ZOTOJIa4u/ZtujX4ow"
   }

@@ -95,56 +95,9 @@ export default class RoomList extends cc.Component {
             this.loadRoomScene();
         }).catch((e) => {
             this.lockSubmit = false;
-            Dialog.open("提示", "加入房间失败，请重试！");
+            Dialog.open("提示", "加入房间失败" + Util.errorMessage(e));
         });
     }
-
-    async joinRoomById() {
-        Util.printLog(this.entryRoomEdit.string);
-        let roomId = this.entryRoomEdit.string;
-
-        if (!roomId) {
-            return Util.printLog(`请输入正确的房间ID`);
-        }
-
-        this.lockSubmit = true;
-        Util.printLog(`正在加入房间，房间ID：${roomId}`);
-        await global.client.joinRoomById(roomId,
-            {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
-            Util.printLog("加入房间成功");
-            global.room = room;
-            global.player = room.player;
-            this.lockSubmit = false;
-            this.loadRoomScene();
-        }).catch((e) => {
-            this.lockSubmit = false;
-            Dialog.open("提示", "加入房间失败，请重试！");
-        });
-    }
-
-    async joinRoomByCode() {
-        Util.printLog(this.entryRoomByCodeEdit.string);
-        let roomCode = this.entryRoomByCodeEdit.string;
-
-        if (!roomCode) {
-            return Util.printLog(`请输入正确的房间CODE`);
-        }
-
-        this.lockSubmit = true;
-        Util.printLog(`正在加入房间，房间CODE：${roomCode}`);
-        await global.client.joinRoomByCode(roomCode,
-            {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
-            Util.printLog("加入房间成功");
-            global.room = room;
-            global.player = room.player;
-            this.lockSubmit = false;
-            this.loadRoomScene();
-        }).catch((e) => {
-            this.lockSubmit = false;
-            Dialog.open("提示", "加入房间失败，请重试！");
-        });
-    }
-
 
     loadRoomScene() {
         this.lockSubmit = true;
@@ -161,7 +114,7 @@ export default class RoomList extends cc.Component {
             this.changeList()
         }).catch((e) => {
             // 查询房间列表失败
-            Util.printLog("查询房间列表失败");
+            Util.printLog("查询房间列表失败" + Util.errorMessage(e));
             global.roomInfos = []
             this.freshList();
             this.changeList()

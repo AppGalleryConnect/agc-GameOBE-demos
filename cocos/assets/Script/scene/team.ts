@@ -18,6 +18,7 @@ import * as Util from "../../util";
 import {PlayerInfo} from "../../GOBE/GOBE";
 import Reloading from "../comp/Reloading";
 import config from "../../config";
+import Dialog from "../comp/Dialog";
 
 const {ccclass, property} = cc._decorator;
 
@@ -42,13 +43,23 @@ export default class Team extends cc.Component {
     // 队伍code
     @property(cc.EditBox)
     teamCodeEditBox: cc.EditBox = null;
+    // 弹框
+    @property(cc.Prefab)
+    dialogPrefab: cc.Prefab = null;
 
     // 是否是队长
     public isOwner = false;
 
     start() {
+        this.initDialog();
         this.initView();
         this.initListener();
+    }
+
+    initDialog() {
+        // 设置对话框
+        const dialogNode = cc.instantiate(this.dialogPrefab) as cc.Node;
+        dialogNode.parent = this.node;
     }
 
     /**
@@ -148,7 +159,7 @@ export default class Team extends cc.Component {
         global.client.dismissGroup().then(() => {
             Util.printLog("解散中...");
         }).catch((e) => {
-            Util.printLog("解散队伍失败");
+            Dialog.open("提示", "解散队伍失败" + Util.errorMessage(e));
         });
     }
 
@@ -169,7 +180,7 @@ export default class Team extends cc.Component {
         global.client.leaveGroup().then(() => {
             Util.printLog("退出队伍中...");
         }).catch((e) => {
-            Util.printLog("退出队伍失败");
+            Dialog.open("提示", "退出队伍失败" + Util.errorMessage(e));
         });
     }
 
@@ -215,8 +226,8 @@ export default class Team extends cc.Component {
                     this.cancelTeamMatch();
                 }
             });
-        }).catch(() => {
-            Util.printLog("快速匹配失败");
+        }).catch((e) => {
+            Util.printLog("快速匹配失败" + Util.errorMessage(e));
             Reloading.close();
         });
     }
@@ -252,17 +263,23 @@ export default class Team extends cc.Component {
             };
             playerInfos.push(player);
         }
+        // 传递“昵称”作为玩家自定义属性
+        let playerName: string = global.playerName;
+        let data: Object = {
+            playerName
+        };
+        let customPlayerProperties: string = JSON.stringify(data);
         global.client.matchGroup({
                 playerInfos: playerInfos,
                 matchCode: config.matchCode
             },
-            {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
+            {customPlayerStatus: 0, customPlayerProperties: customPlayerProperties}).then((room) => {
             Util.printLog('队员匹配成功:' + room);
             global.room = room;
             cc.director.loadScene("teamroom");
             Reloading.close();
         }).catch((e) => {
-            Util.printLog('队员匹配失败:' + e);
+            Util.printLog('队员匹配失败:' + Util.errorMessage(e));
             Reloading.close();
         });
     }
@@ -283,11 +300,14 @@ export default class Team extends cc.Component {
                 return;
             }
             // 退出队伍失败
-            Util.printLog("获取最新的队伍信息失败");
+            Util.printLog("获取最新的队伍信息失败" + Util.errorMessage(e));
         });
     }
 
     onDisable() {
         Reloading.close();
+        if (global.group) {
+            global.group.removeAllListeners();
+        }
     }
 }

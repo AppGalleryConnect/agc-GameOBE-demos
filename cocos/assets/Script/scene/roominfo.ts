@@ -97,7 +97,7 @@ export default class roominfo extends cc.Component {
             this.loadRoomScene();
         }).catch((e) => {
             // 创建房间失败
-            Dialog.open("提示", "创建房间失败，请重试");
+            Dialog.open("提示", "创建房间失败" + Util.errorMessage(e));
         });
     }
 

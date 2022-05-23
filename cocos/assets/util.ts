@@ -15,6 +15,7 @@
  */
 
 import global from "./global";
+import config from "./config";
 
 /**
  * 随机产生 openId
@@ -27,6 +28,56 @@ export function mockOpenId() {
     }
 
     return str;
+}
+
+let i = 0;
+let arr=[1,11,12,13] // 1~10 表示1人队的一方 ， 11~20 表示3人队的一方
+
+export function mockAck() {
+    let str = arr[i];
+    i = i+1;
+    return str;
+}
+
+export function getPlayerMatchParams() {
+    if (config.asymmetric) {
+        return {'level': 3, "def":1};
+    } else {
+        return {'level': 2};
+    }
+
+}
+
+export function getTeamMatchParams() {
+    if (config.asymmetric) {
+        return {
+            matchParams : { "ack" : mockAck()}
+        };
+    } else {
+        return null;
+    }
+}
+
+/**
+ * 获取玩家自定义属性
+ */
+export function  getCustomPlayerProperties() {
+    let playerName: string = global.playerName;
+    let ack: number = 0;
+    let data: Object = {};
+    const teamMatchParams = getTeamMatchParams();
+    if(teamMatchParams){    //非对称匹配传的player属性
+        ack = teamMatchParams.matchParams.ack;
+        data = {
+            ack, playerName
+        }
+    } else{     // 对称匹配传的属性。
+        data = {
+            playerName
+        }
+    }
+    let customPlayerProperties: string = JSON.stringify(data);
+    return customPlayerProperties;
 }
 
 export function mockPlayerName(): string {
@@ -53,4 +104,12 @@ export function isInited(): boolean {
  */
 export function printLog(logStr: string) {
     return cc.log(logStr);
+}
+
+/**
+ * 报错信息统一处理
+ * @param error
+ */
+export function errorMessage(error: any) {
+    return (error && error.code && error.message) ? ":" + error.code + " | " + error.message : "";
 }

@@ -32,6 +32,7 @@ class GlobalData {
     public isTeamMode: boolean = false;
     public isOnlineMatch: boolean = false;
     public playerName: string = "";
+    public bulletId: number = 0;
 }
 
 export default new GlobalData();

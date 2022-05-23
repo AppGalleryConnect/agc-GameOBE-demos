@@ -107,12 +107,12 @@ export default class Room extends cc.Component {
     ready() {
         Util.printLog(`准备就绪`);
         let ready = 1;
-        global.player.setCustomStatus(ready).then(() => {
+        global.player.updateCustomStatus(ready).then(() => {
             // 修改玩家自定义状态
             this.initRoomView();
         }).catch((e) => {
             // 修改玩家自定义状态失败
-            Util.printLog("准备就绪失败");
+            Dialog.open("提示", "准备就绪失败" + Util.errorMessage(e));
         });
     }
 
@@ -120,12 +120,12 @@ export default class Room extends cc.Component {
     cancelReady() {
         Util.printLog(`取消准备`);
         let unready = 0;
-        global.player.setCustomStatus(unready).then(() => {
+        global.player.updateCustomStatus(unready).then(() => {
             // 修改玩家自定义状态
             this.initRoomView();
         }).catch((e) => {
             // 修改玩家自定义状态失败
-            Util.printLog("取消准备失败");
+            Dialog.open("提示", "取消准备失败" + Util.errorMessage(e));
         });
     }
 
@@ -137,13 +137,13 @@ export default class Room extends cc.Component {
                 playerId = player.playerId;
             }
         });
-        global.room.kickPlayer(playerId).then(() => {
+        global.room.removePlayer(playerId).then(() => {
             // 踢人成功
             Util.printLog("踢人成功");
             this.initRoomView();
         }).catch((e) => {
             // 踢人失败
-            Util.printLog("踢人失败");
+            Dialog.open("提示", "踢人失败" + Util.errorMessage(e));
         });
     }
 
@@ -228,7 +228,7 @@ export default class Room extends cc.Component {
             Util.printLog("退出房间成功");
         }).catch((e) => {
             // 退出房间失败
-            Util.printLog("退出房间失败");
+            Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
         });
     }
 
@@ -242,7 +242,7 @@ export default class Room extends cc.Component {
             Util.printLog("解散房间成功");
         }).catch((e) => {
             // 退出房间失败
-            Util.printLog("解散房间失败");
+            Dialog.open("提示", "解散房间失败" + Util.errorMessage(e));
         });
     }
 
@@ -265,7 +265,7 @@ export default class Room extends cc.Component {
                     Util.printLog("开始帧同步成功");
                 }).catch((e) => {
                     // 开始帧同步失败
-                    Util.printLog("开始帧同步失败");
+                    Dialog.open("提示", "开始帧同步失败" + Util.errorMessage(e));
                 });
             }
         });

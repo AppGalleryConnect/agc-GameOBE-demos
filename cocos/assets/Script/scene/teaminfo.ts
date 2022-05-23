@@ -15,6 +15,8 @@
  */
 import global from "../../global";
 import * as Util from "../../util";
+import Dialog from "../comp/Dialog";
+
 const {ccclass, property} = cc._decorator;
 
 @ccclass
@@ -30,11 +32,21 @@ export default class TeamInfo extends cc.Component {
     @property(cc.Button)
     entryTeamBtn: cc.Button = null;
 
+    @property(cc.Prefab)
+    dialogPrefab: cc.Prefab = null;
+
     private lockSubmit: boolean = false;
 
-    start () {
+    start() {
         // 绑定“加入队伍”按钮
         this.entryTeamBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.joinTeam());
+        this.initDialog();
+    }
+
+    initDialog() {
+        // 设置对话框
+        const dialogNode = cc.instantiate(this.dialogPrefab) as cc.Node;
+        dialogNode.parent = this.node;
     }
 
     async joinTeam() {
@@ -58,6 +70,7 @@ export default class TeamInfo extends cc.Component {
         }).catch((e) => {
             this.lockSubmit = false;
             this.logTip.string = "场景报错：房间已满，无法加入！";
+            Dialog.open("提示", "加入队伍失败" + Util.errorMessage(e));
         });
     }
 

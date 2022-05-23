@@ -19,6 +19,7 @@ import * as Util from "../../util";
 import Dialog from "../comp/Dialog";
 import Reloading from "../comp/Reloading";
 import config from "../../config";
+import {MatchPlayerInfoParam, MatchTeamInfoParam} from "../../GOBE/GOBE";
 
 const {ccclass, property} = cc._decorator;
 
@@ -109,7 +110,6 @@ export default class Hall extends cc.Component {
      * 组队匹配（创建队伍）
      */
     teamMatch() {
-        this.lockSubmit = true;
         global.client.createGroup({
             maxPlayers: 2,
             groupName: "快乐小黑店",
@@ -126,7 +126,7 @@ export default class Hall extends cc.Component {
             cc.director.loadScene("team");
         }).catch((e) => {
             this.lockSubmit = false;
-            Dialog.open("提示", "创建队伍失败，请重试");
+            Dialog.open("提示", "组队匹配失败" + Util.errorMessage(e));
         });
     }
 
@@ -152,30 +152,45 @@ export default class Hall extends cc.Component {
         Util.printLog(global.playerId);
         let player = {
             playerId: global.playerId,
-            matchParams: {'level': "2"}
+            matchParams: Util.getPlayerMatchParams()
         };
-
         this.lockSubmit = true;
         Reloading.open("匹配中。。。", true, () => {
             this.cancelTeamMatch();
         });
+        // 需要根据是否非对称，选择对应的matchCode
+        let matchCode: string = "";
+        if (config.asymmetric) {
+            matchCode = config.asymmetricMatchCode;
+        }else{
+            matchCode = config.matchCode;
+        }
         global.client.matchPlayer(
             {
                 playerInfo: player,
-                matchCode: config.matchCode,
-            }, {customPlayerStatus: 0, customPlayerProperties: global.playerName}).then((room) => {
+                teamInfo: Util.getTeamMatchParams(),
+                matchCode: matchCode
+            }, {customPlayerStatus: 0, customPlayerProperties: Util.getCustomPlayerProperties()}).then((room) => {
             // 匹配成功
             global.room = room;
             global.player = room.player;
             global.isOnlineMatch = true;
-            cc.director.loadScene("teamroom");
+            if(config.asymmetric){
+                // 非对称匹配
+                cc.director.loadScene("asymmetricroom");
+            }else{
+                // 对称匹配
+                cc.director.loadScene("teamroom");
+            }
             Reloading.close();
         }).catch((e) => {
             this.lockSubmit = false;
-            Util.printLog("在线匹配失败");
+            Util.printLog("在线匹配失败" + Util.errorMessage(e));
             Reloading.close();
         });
     }
+
+
 
     /**
      * 取消快速匹配
