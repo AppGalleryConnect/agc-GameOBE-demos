@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
+  - enabled: 1
+    path: Assets/Scenes/Home.unity
+    guid: c4d1dbc2b86e78944859b3e69dc1333e
+  - enabled: 1
+    path: Assets/Scenes/Hall.unity
+    guid: 295c2f40e7b762c4692001b9f311a20e
+  - enabled: 1
+    path: Assets/Scenes/Match.unity
+    guid: 29d948122e2ee2347827a4d2e3f6b7d5
+  - enabled: 1
+    path: Assets/Scenes/TeamInfoView.unity
+    guid: aba9aa0826c5cac4191dc8cd32d5b4b2
+  - enabled: 1
+    path: Assets/Scenes/CreateRoom.unity
+    guid: 571c87bae1728984b9243970f7715a80
+  - enabled: 1
+    path: Assets/Scenes/RoomList.unity
+    guid: a22211c769a439e428d7e39a5cdf284d
+  - enabled: 1
+    path: Assets/Scenes/Room.unity
+    guid: 1dd525b532029674d90d340438e5e411
+  - enabled: 1
+    path: Assets/Scenes/team.unity
+    guid: 59fe99e26fd84e4409f67acbc58cccfe
+  - enabled: 1
+    path: Assets/Scenes/teamroom.unity
+    guid: 59bfd82862d76ae49bd5135b6b5a5568
+  - enabled: 1
+    path: Assets/Scenes/GameView.unity
+    guid: 2b5afdefff9a42a4ba80ee2f3545b220
+  m_configObjects: {}
