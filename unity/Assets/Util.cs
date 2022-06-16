@@ -14,8 +14,9 @@
  *  limitations under the License.
  */
 
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ public class Util {
     private readonly static string _playerNameOption = "abcdefghijklmnopqrstuvwxyz";
 
     private readonly static string _openIdOption = "0123456789abcdefghijklmnopqrstuvwxyz";
+    
+    public readonly static string  _robotPrefix = "机器人";
 
     /**
      * 随机产生 openId
@@ -81,4 +84,71 @@ public class Util {
     {
         return (e != null) ? ":" + e.code + " | " + e.Message : "";
     }
+
+    public static Dictionary<string, string> GetPlayerMatchParams()
+    {
+        Dictionary<string, string> matchParams = new Dictionary<string, string>();
+        if (Global.isAsymmetric)
+        {
+            matchParams.Add("level", Global.level);
+            matchParams.Add("age", Global.age);
+            matchParams.Add("power", Global.power);
+            matchParams.Add("skill", Global.skill);
+            matchParams.Add("weapon", Global.weapon);
+        }
+        else
+        {
+            matchParams.Add("level", "2");
+           
+        }
+        return matchParams;
+
+    }
+
+    public static Dictionary<string, string> getTeamMatchParams()
+    {
+        Dictionary<string, string> matchParams = new Dictionary<string, string>();
+        if (Global.isAsymmetric)
+        {
+            matchParams.Add("teamNumber", Global.teamNumber);
+            return matchParams;
+
+        } else
+        {
+            return null;
+        }
+    }
+
+    public static string getCustomPlayerProperties() {
+       string playerName =  Global.playerName;
+       string teamNumber = "0";
+       string result = "";
+    
+       Dictionary<string, string> teamMatchParams = getTeamMatchParams();
+        //非对称模式
+        if (teamMatchParams != null)
+        {
+            teamMatchParams.TryGetValue("teamNumber", out teamNumber);
+            AckData ackData = new AckData
+            {
+                PlayerName = playerName,
+                TeamNumber = teamNumber
+            };
+            result = JsonConvert.SerializeObject(ackData);
+        }
+        else {
+            result = playerName;
+        }
+       return result;
+    }
+
+    public static String MockRobotNameJson(string playerId)
+    {
+        AckData ackData = new AckData
+        {
+            PlayerName = _robotPrefix+playerId,
+        };
+        return JsonConvert.SerializeObject(ackData);
+    }
+
 }

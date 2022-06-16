@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using com.huawei.game.gobes;
+using Com.Huawei.Game.Gobes;
 
 public struct CreatFaceParam
 {
@@ -36,10 +36,9 @@ public class Face : MonoBehaviour
     public GameObject dismissBtn;
     public GameObject kickBtn;
 
-    public void RandomizeCharacter(CreatFaceParam param)
-    {
+    public void RandomizeCharacter(CreatFaceParam param) {
         // 当前角色是否为房主
-        bool roleIsOwner = param.name == Global.Room.roomInfo.ownerId;
+        bool roleIsOwner = param.name == Global.Room.roomInfo.OwnerId;
 
         playName.text = param.name;
 
@@ -63,8 +62,7 @@ public class Face : MonoBehaviour
         }
     }
 
-    public void DismissRoom()
-    {
+    public void DismissRoom() {
         Debug.Log("解散房间");
         Global.client.DismissRoom(res =>
         {
@@ -80,28 +78,24 @@ public class Face : MonoBehaviour
         });
     }
 
-    public void OnDissRoom()
-    {
-        SceneManager.LoadScene("Hall");
+    public void OnDissRoom() {
+        Route.GoHall();
     }
 
     public void Kick()
     {
-        KickPlayerConfig kickPlayerParam = new KickPlayerConfig()
+        RemovePlayerConfig removePlayerConfig = new RemovePlayerConfig()
         {
-            roomId = Global.Room.roomInfo.roomId,
-            playerId = playName.text,
+            PlayerId = playName.text,
         };
 
-        Global.client.kickPlayer(kickPlayerParam, res =>
+        Global.client.RemovePlayer(removePlayerConfig, res =>
         {
-            if (res.RtnCode == 0)
-            {
+            if (res.RtnCode == 0) {
                 Debug.Log("踢人success");
                 GameObject.FindWithTag("RoomCanvas").GetComponent<RentRoom>().GetRoomInfo();
             }
-            else
-            {
+            else {
                 Debug.Log($"踢人fail {res.Msg}");
             }
         });

@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes.Utils;
 using static Dialog;
 
 public class Cancel : MonoBehaviour
@@ -31,39 +31,18 @@ public class Cancel : MonoBehaviour
 
     public Text Msg;
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-      
-            
-        
-    }
-
-    public void CancelFastMatchBtn()
-    {
+    public void CancelFastMatchBtn() {
         Msg.text = "取消中。。。";
         CancelButton.gameObject.SetActive(false);
-
-        //调用client.cancelMatch()
-        try
-        {
+        try {
             Global.client.CancelMatch();
-        }
-        catch (SDKException e){
+        } catch (SDKException e){
             Debug.Log("CancelMatch failed");
             OpenFailWindow("取消快速匹配失败" + Util.ExceptionMessage(e));
         }
     }
 
-    public void OpenFailWindow(string msg)
-    {
+    public void OpenFailWindow(string msg) {
         Debug.Log("弹出失败窗口");
         GameObject loading = GameObject.Find("/loading(Clone)");
         Destroy(loading);

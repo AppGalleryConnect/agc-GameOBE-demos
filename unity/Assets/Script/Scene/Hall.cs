@@ -18,17 +18,14 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static Dialog;
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Group;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Group;
 using System.Collections.Generic;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes.Utils;
 using System.Threading;
 
 public class Hall : MonoBehaviour
 {
-    // Start is called before the first frame update
-
-
     public GameObject LoadingPre;
 
     public GameObject BackGroud;
@@ -39,9 +36,10 @@ public class Hall : MonoBehaviour
 
     public string Msg;
 
+    // Start is called before the first frame update
     void Start()
     {
-
+        
     }
 
     // Update is called once per frame
@@ -55,7 +53,17 @@ public class Hall : MonoBehaviour
         }
         if (Global.room != null)
         {
-            SceneManager.LoadScene("teamroom");
+
+            if (Global.isAsymmetric)
+            {
+                // 非对称匹配
+                Route.GoAsymmetricRoom();
+            }
+            else
+            {
+                // 对称匹配
+                Route.GoTeamRoom();
+            }
         }
     }
 
@@ -65,7 +73,7 @@ public class Hall : MonoBehaviour
     {
         Debug.Log("进入菜鸟区");
         Global.matchRule = "0";
-        SceneManager.LoadScene("Match");
+        Route.GoMatch();
     }
     //点击高手区按钮
     public void OnExpertRoomBtn()
@@ -73,7 +81,7 @@ public class Hall : MonoBehaviour
 
         Debug.Log("进入高手区");
         Global.matchRule = "1";
-        SceneManager.LoadScene("Match");
+        Route.GoMatch();
     }
     //点击快速匹配按钮
     public void OnFastMatchBtn()
@@ -89,23 +97,30 @@ public class Hall : MonoBehaviour
 
     void MatchPlayer() {
 
-        Dictionary<string, string> matchParams = new Dictionary<string, string>();
-        matchParams.Add("level", "2");
-
         MatchPlayerInfoParam matchPlayerInfoParam = new MatchPlayerInfoParam()
         {
-            playerId = Global.playerId,
-            matchParams = matchParams
+            PlayerId = Global.playerId,
+            MatchParams = Util.GetPlayerMatchParams()
         };
+
+        // 需要根据是否非对称，选择对应的matchCode
+  
+
+        MatchTeamInfoParam matchTeamInfoParam = new MatchTeamInfoParam()
+        {
+            MatchParams = Util.getTeamMatchParams()
+        };
+
         MatchPlayerConfig matchPlayerConfig = new MatchPlayerConfig()
         {
-            matchCode = Config.matchCode,
-            playerInfo = matchPlayerInfoParam
+            MatchCode = Global.matchCode,
+            PlayerInfo = matchPlayerInfoParam,
+            TeamInfo = matchTeamInfoParam
         };
         PlayerConfig playerConfig = new PlayerConfig
         {
             CustomPlayerStatus = 0,
-            CustomPlayerProperties = Global.playerName,
+            CustomPlayerProperties = Util.getCustomPlayerProperties()
         };
         try
         {
@@ -114,8 +129,8 @@ public class Hall : MonoBehaviour
                 if (response.RtnCode == 0)
                 {
                     Debug.Log("MatchPlayer Success");
-                    Global.Room = response.room;
-                    Global.player = response.room._player;
+                    Global.Room = response.Room;
+                    Global.player = response.Room._player;
                     Global.isOnlineMatch = true;
                     Flag = true;
                 }
@@ -155,13 +170,13 @@ public class Hall : MonoBehaviour
         CreateGroupConfig createGroupConfig = new CreateGroupConfig
         {
 
-            maxPlayers = 2,
-            groupName = "快乐小黑店",
-            isLock = 0,
-            isPersistent = 0,
-            customPlayerStatus = "0",
-            customPlayerProperties = Global.playerName,
-            customGroupProperties = "快乐小黑店"
+            MaxPlayers = 2,
+            GroupName = "快乐小黑店",
+            IsLock = 0,
+            IsPersistent = 0,
+            CustomPlayerStatus = "0",
+            CustomPlayerProperties = Global.playerName,
+            CustomGroupProperties = "快乐小黑店"
         };
         try
         {
@@ -177,7 +192,7 @@ public class Hall : MonoBehaviour
         if (res.RtnCode == 0)
         {
             Debug.Log("CreateGroup success");
-            SceneManager.LoadScene("team");
+            Route.GoTeam();
         }
         else
         {
@@ -190,7 +205,7 @@ public class Hall : MonoBehaviour
     public void OnJoinTeamBtn()
     {
         Debug.Log("加入队伍");
-        SceneManager.LoadScene("TeamInfoView");
+        Route.GoTeamInfoView();
     }
 
     public void OpenFailWindow(string FailMsg)

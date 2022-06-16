@@ -6,6 +6,9 @@ TagManager:
   tags:
   - RoomListCanvas
   - RoomCanvas
+  - Circle
+  - Undefined
+  - Bullet
   layers:
   - Default
   - TransparentFX

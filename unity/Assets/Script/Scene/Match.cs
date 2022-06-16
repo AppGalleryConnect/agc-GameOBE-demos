@@ -14,17 +14,11 @@
  *  limitations under the License.
  */
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Room;
-using System;
-using com.huawei.game.gobes.utils;
-using System.Threading;
-
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Utils;
 
 public class Match : MonoBehaviour
 {
@@ -41,23 +35,16 @@ public class Match : MonoBehaviour
 
     public Button Button = null;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
     // Update is called once per frame
     void Update()
     {
-        if (!Flag)
-        {
+        if (!Flag) {
             Debug.Log("房间匹配失败");
             OpenFailWindow();
             Flag = true;
         }
         if (Global.room != null) {
-            SceneManager.LoadScene("Room");
+            Route.GoRoom();
         }
     }
 
@@ -65,13 +52,13 @@ public class Match : MonoBehaviour
     public void CreateRoomBtn()
     {
         Debug.Log("创建房间");
-        SceneManager.LoadScene("CreateRoom");
+        Route.GoCreateRoom();
     }
     //点击加入房间
     public void JoinRoomBtn()
     {
         Debug.Log("加入房间");
-        SceneManager.LoadScene("RoomList");
+        Route.GoRoomList();
     }
 
     //点击快速匹配
@@ -95,10 +82,10 @@ public class Match : MonoBehaviour
 
         MatchRoomConfig matchRoomConfig = new MatchRoomConfig
         {
-            matchParams = matchParams,
-            roomType = Global.matchRule,
-            customRoomProperties = Global.matchRule,
-            maxPlayers = 2,
+            MatchParams = matchParams,
+            RoomType = Global.matchRule,
+            CustomRoomProperties = Global.matchRule,
+            MaxPlayers = 2,
         };
 
         PlayerConfig playerConfig = new PlayerConfig
@@ -113,8 +100,8 @@ public class Match : MonoBehaviour
                 if (response.RtnCode == 0)
                 {
                     Debug.Log("roommatch success");
-                    Global.room = response.room;
-                    Global.player = response.room._player;
+                    Global.room = response.Room;
+                    Global.player = response.Room._player;
                     Flag = true;
                 }
                 else

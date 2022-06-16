@@ -29,36 +29,23 @@ public class Dialog : MonoBehaviour
     public Text Contetnt = null;
 
     public Button BtnConfirm;
-
-
     void Start()
     {
-      
+
         this.InitListener();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-   
     void InitListener() {
-
-      
-        this.BtnConfirm.onClick.AddListener(() => Dispear());
-
+        this.BtnConfirm.onClick.AddListener(Dispear);
     }
 
-    // 打开对话框
+    // 鎵撳紑寮规
     public void Open(String title,String content) {
         this.Title.text = title;
         this.Contetnt.text = content;
     }
 
-    void Dispear()
-    {
+    void Dispear() {
         Destroy(this.gameObject);
         GameObject bg = GameObject.Find("/bg(Clone)");
         Destroy(bg);

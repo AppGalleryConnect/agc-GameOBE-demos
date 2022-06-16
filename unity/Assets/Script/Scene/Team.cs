@@ -18,9 +18,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Group;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Group;
+using Com.Huawei.Game.Gobes.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -56,34 +56,20 @@ public class Team : MonoBehaviour
 
     // 是否是队长
     public bool isOwner = false;
-    
-    // 跳转页面
-    private static Boolean goTeamRoom = false, goHall = false;
-    
+
     public bool Flag = true;
 
-    public bool PlayerMatch = false;
-    
     // 定时
     private float interval = 2f; // 每隔2秒执行一次
 
     // Start is called before the first frame update
     void Start() {
-        goHall = false;
         InitListener();
         InvokeRepeating("InitView", 0f, interval);
     }
 
     void Update()
     {
-        if (goHall) {
-            goHall = false;
-            GoHall();
-        }
-        if (goTeamRoom) {
-            goTeamRoom = false;
-            GoTeamRoom();
-        }
         if (!Flag) {
             if (isOwner) {
                 GameObject loading = GameObject.Find("/loading(Clone)");
@@ -97,23 +83,6 @@ public class Team : MonoBehaviour
             }
             Flag = true;
         }
-
-        if (PlayerMatch) {
-            Reloading loading = Instantiate(Loading);
-            loading.Open("队员匹配中...");
-            PlayerMatch = false;
-        }
-    }
-
-    // 页面跳转
-    private void GoHall()
-    {
-        Route.GoHall();
-    }
-
-    private void GoTeamRoom()
-    {
-        Route.GoTeamRoom();
     }
 
     /**
@@ -128,19 +97,19 @@ public class Team : MonoBehaviour
         // 队伍code
         if (teamCodeEditBox != null)
         {
-            this.teamCodeEditBox.text = group.groupId;
+            this.teamCodeEditBox.text = group.GroupId;
             // 当前玩家数
-            this.playerNum.text = group.players == null ? "" : group.players.Length.ToString();
+            this.playerNum.text = group.Players == null ? "" : group.Players.Length.ToString();
         }
-        Debug.Log("队伍code：" + group.groupId);
+        Debug.Log("队伍code：" + group.GroupId);
         PlayerInfo owner = null;
         PlayerInfo player = null;
-        if (group.players!= null && group.players.Length > 0) {
+        if (group.Players!= null && group.Players.Length > 0) {
             // 获取队长玩家
-            PlayerInfo[] players = group.players;
+            PlayerInfo[] players = group.Players;
             foreach (PlayerInfo playerInfo in players) {
                 if (playerInfo != null) {
-                    if (playerInfo.PlayerId == group.ownerId) {
+                    if (playerInfo.PlayerId == group.OwnerId) {
                         // 队长
                         owner = playerInfo;
                     } else {
@@ -154,7 +123,7 @@ public class Team : MonoBehaviour
         this.playerName.text = player == null ? "?" : player.CustomPlayerProperties;
 
         // 根据是否队长显示按钮
-        if (group.ownerId == Global.playerId) { // 是队长
+        if (group.OwnerId == Global.playerId) { // 是队长
             this.isOwner = true;
             // 显示“解散队伍”和“快速匹配”按钮
             if (enableMatchBtn == null)
@@ -200,7 +169,7 @@ public class Team : MonoBehaviour
     public void OnDismiss(ServerEvent serverEvent) {
         Debug.Log("队伍已解散");
         Global.group = null;
-        goHall = true;
+        UnityMainThread.wkr.AddJob(Route.GoHall);
     }
 
     /**
@@ -223,7 +192,7 @@ public class Team : MonoBehaviour
         }
         if (operatorId == Global.playerId) {  
             // 是本人退出
-            goHall = true;
+            UnityMainThread.wkr.AddJob(Route.GoHall);
         } else {
             this.UpdateGroup();
         }
@@ -285,8 +254,11 @@ public class Team : MonoBehaviour
         Debug.Log("心跳：匹配开始通知，serverEvent =" + serverEvent);
         if (!this.isOwner && serverEvent.EventType == "1") {
             // 如果不是队长就弹出匹配中
-            PlayerMatch = true;
-            PlayerInfo[] players = Global.group.groupInfo.players;
+            UnityMainThread.wkr.AddJob(() => {
+                Reloading loading = Instantiate(Loading);
+                loading.Open("队员匹配中...");
+            });
+            PlayerInfo[] players = Global.group.groupInfo.Players;
             this.TeamMatchGroup(players);
         }
     }
@@ -296,14 +268,14 @@ public class Team : MonoBehaviour
      */
     void TeamMatch() {
         GameObject loading = Instantiate(LoadingPre);
-        PlayerInfo[] players = Global.group.groupInfo.players;
+        PlayerInfo[] players = Global.group.groupInfo.Players;
         this.enableMatchBtn.GetComponent<Button>().enabled = false;
         this.enableMatchBtn.GetComponent<Button>().interactable = false;
         Global.group.GetGroupDetail(response => {
             if (response.RtnCode == 0)
             {
                 Global.group = new Group(response.GroupInfo);
-                players = response.GroupInfo.players;
+                players = response.GroupInfo.Players;
                 // 组队小队匹配
                 this.TeamMatchGroup(players);
             } else {
@@ -319,18 +291,18 @@ public class Team : MonoBehaviour
         for (int i = 0; i < players.Length; i++) {
             MatchPlayerInfoParam matchPlayerInfoParam = new MatchPlayerInfoParam();
 
-            matchPlayerInfoParam.playerId = players[i].PlayerId;
+            matchPlayerInfoParam.PlayerId = players[i].PlayerId;
 
             Dictionary<string, string> matchParams = new Dictionary<string, string>();
             matchParams.Add("level", "2");
-            matchPlayerInfoParam.matchParams = matchParams;
+            matchPlayerInfoParam.MatchParams = matchParams;
 
             playerInfos[i] = matchPlayerInfoParam;
         }
 
         MatchGroupConfig matchGroupConfig = new MatchGroupConfig();
-        matchGroupConfig.matchCode = Config.matchCode;
-        matchGroupConfig.playerInfos = playerInfos;
+        matchGroupConfig.MatchCode = Global.matchCode;
+        matchGroupConfig.PlayerInfos = playerInfos;
 
         PlayerConfig playerConfig = new PlayerConfig();
         playerConfig.CustomPlayerStatus = 0;
@@ -346,8 +318,8 @@ public class Team : MonoBehaviour
                 // 匹配成功
                 else if ((int) ErrorCode.COMMON_OK == response.RtnCode || 
                          (int) ErrorCode.PLAYER_MATCH_CANCEL_WHEN_SUCCESS == response.RtnCode) {
-                    Global.room = response.room;
-                    goTeamRoom = true;
+                    Global.room = response.Room;
+                    UnityMainThread.wkr.AddJob(Route.GoTeamRoom);
                 }
                 else
                 // 匹配超时等其他匹配异常
@@ -378,7 +350,7 @@ public class Team : MonoBehaviour
                 if (response.RtnCode == 101302)
                 {   // 队伍不存在
                     Debug.Log("队伍不存在，返回大厅");
-                    goHall = true;
+                    UnityMainThread.wkr.AddJob(Route.GoHall);
                     return;
                 }
                 // 退出队伍失败

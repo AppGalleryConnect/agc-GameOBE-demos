@@ -19,8 +19,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Room;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Room;
 
 public class CreateRoom : MonoBehaviour
 {
@@ -28,19 +28,6 @@ public class CreateRoom : MonoBehaviour
 
     // 0:公开房间,1:私有房间
     private int isOpen = 0;
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
 
     // 点击创建房间按钮
     public void OnCreateRoom()
@@ -64,27 +51,23 @@ public class CreateRoom : MonoBehaviour
         playerConfig.CustomPlayerProperties = "";
 
         Global.Room = Global.client.CreateRoom(createRoomConfig, playerConfig, response => {
-
-            if (response.RtnCode != 0)
-            {
+            if (response.RtnCode != 0) {
                 return;
             }
             // 跳转到房间
-            SceneManager.LoadScene("Room");
+            Route.GoRoom();
         });
         Global.player = Global.Room._player;
         Debug.Log(Global.Room.roomInfo);
     }
 
     // 点击取消创建房间按钮
-    public void OnCancelRoom()
-    {
-        SceneManager.LoadScene("Match");
+    public void OnCancelRoom() {
+        Route.GoMatch();
     }
 
     // 修改房间是否为公开
-    public void OnUpdateOpen(bool isOpen)
-    {
+    public void OnUpdateOpen(bool isOpen) {
         this.isOpen = isOpen ? 0 : 1;
     }
 

@@ -17,9 +17,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Group;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Group;
+using Com.Huawei.Game.Gobes.Utils;
 using Newtonsoft.Json;
 
 public class TeamInfo : MonoBehaviour
@@ -34,15 +34,9 @@ public class TeamInfo : MonoBehaviour
         InitListener();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     void InitListener()
     {
-        this.Button.onClick.AddListener(() => JoinTeam());
+        this.Button.onClick.AddListener(JoinTeam);
     }
 
     void JoinTeam()
@@ -50,9 +44,9 @@ public class TeamInfo : MonoBehaviour
         //Debug.Log(teamCode.text);
         JoinGroupConfig joinGroupConfig = new JoinGroupConfig()
         {
-            groupId = TeamCode.text,
-            customPlayerStatus = "0",
-            customPlayerProperties = Global.playerName
+            GroupId = TeamCode.text,
+            CustomPlayerStatus = "0",
+            CustomPlayerProperties = Global.playerName
         };
         Debug.Log(JsonConvert.SerializeObject(joinGroupConfig));
         try {
@@ -63,7 +57,7 @@ public class TeamInfo : MonoBehaviour
                     Debug.Log("加入队伍成功");
                     Global.group = new Group(Global.client, response.GroupInfo);
                     Debug.Log("跳转场景team");
-                    SceneManager.LoadScene("team");
+                    Route.GoTeam();
                 }
                 else
                 {

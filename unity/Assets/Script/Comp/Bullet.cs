@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,43 +14,27 @@
  *  limitations under the License.
  */
 
-using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.UI;
-using static FrameSync;
-
-public class Players : MonoBehaviour {
-
-    public Text label = null;
-
-    public GameObject icon1Sprite = null;
-
-    public GameObject icon2Sprite = null;
-
-    public string playerId;
-
-    // 初始化玩家/红队/黄队的位置和方向
-    public void InitPlayer(string id, int rotation, int x, int y, string playerTeamId)
-    {
-        this.playerId = id;
-        if ((playerTeamId == null && id == Global.playerId) || (playerTeamId !=null && GameTeam.red.ToString().Equals(playerTeamId) )) {
-            this.icon1Sprite.SetActive(true);
-            
-            this.icon2Sprite.SetActive(false);
-            this.icon1Sprite.transform.eulerAngles = new Vector3(0, 0, rotation);
+public class Bullet : MonoBehaviour
+{
+    public int speed = 20;
+    public bool isDie = true;
+    public int bullectId = 0;
+    public string playerId = "";
+    
+    public void initBullet(int x,int y,string PlayerId,int BullectId) {
+        this.playerId = PlayerId;
+        this.bullectId = BullectId;
+        // 如果宽高超过边界，销毁子弹
+        if(x > FrameSync._maxX || x < FrameSync._minX || y > FrameSync._maxY || y < FrameSync._minY){
+            // 子弹数据销毁
+            FrameSync.frameSyncBulletList = FrameSync.frameSyncBulletList.Where(item => !(item.playerId.Equals(PlayerId) && item.bulletId == BullectId)).ToList();
+        }else{
+            this.gameObject.transform.position = new Vector3(x, y, 0);
         }
-        if ((playerTeamId == null && id != Global.playerId) || (playerTeamId != null && GameTeam.yellow.ToString().Equals(playerTeamId))) {
-            this.icon1Sprite.SetActive(false);
-            this.icon2Sprite.SetActive(true);
-            this.icon2Sprite.transform.eulerAngles = new Vector3(0, 0, rotation);
-        }
-        if (id == Global.playerId) {
-            id = "我";
-        }
-        this.label.text = id;
-        this.gameObject.transform.position = new Vector3(x, y, 0);
+
     }
     
     /**
@@ -59,16 +43,17 @@ public class Players : MonoBehaviour {
      */
     public void OnTriggerEnter(Collider other)
     {
-        Debug.Log("飞机碰撞2-----------------------------"+other.tag+"==="+other.gameObject.tag);
-        if (FrameSync.BulletTag.Equals(other.tag))
+        Debug.Log("子弹碰撞2-----------------------------"+other.tag+"==="+other.gameObject.tag);
+        if (FrameSync.PlayerTag.Equals(other.tag))
         {
             CollisionFrameList<FrameSync.CollisionFrameData>.CollisionFrameData<FrameSync.CollisionFrameData> collisionFrameData =
                 new CollisionFrameList<FrameSync.CollisionFrameData>.CollisionFrameData<FrameSync.CollisionFrameData>();
             collisionFrameData.state = new FrameSync.CollisionFrameData();
             collisionFrameData.state.cmd = FrameSync.FrameSyncCmd.collide;
             collisionFrameData.otherTag = other.tag;//被碰撞体标签
-            collisionFrameData.selfTag = FrameSync.PlayerTag;//碰撞体标签
+            collisionFrameData.selfTag = FrameSync.BulletTag;//碰撞体标签
             collisionFrameData.playerId = playerId;
+            collisionFrameData.bulletId = bullectId;
             
             string frameData = JsonConvert.SerializeObject(collisionFrameData);
             // 调用SDK发送帧数据
@@ -76,5 +61,4 @@ public class Players : MonoBehaviour {
             Global.Room.SendFrame(frameDatas, response => {});
         }
     }
-
 }

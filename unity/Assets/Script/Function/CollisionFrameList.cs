@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,18 @@
  *  limitations under the License.
  */
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
-public class Config {
-       public static string openId = Util.MockOpenId();
-       public static Boolean isOpenSDKLog = true;
-
+public class CollisionFrameList<T>
+{
+    public class CollisionFrameData<T>
+    {
+        public string playerId { get; set; }
+        public int bulletId { get; set; }
+        public string otherTag { get; set; }
+        public string selfTag { get; set; }
+        public T state { get; set; }
+    }
+    
+    public List<CollisionFrameData<T>> collisionFrames = new List<CollisionFrameData<T>>();    
 }

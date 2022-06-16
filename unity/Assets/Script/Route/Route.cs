@@ -27,7 +27,7 @@ public class Route {
     }
     
     public static void GoHall() {
-        Global.Room = null;
+        Global.room = null;
         SceneManager.LoadScene("Hall");
     }
 
@@ -48,7 +48,7 @@ public class Route {
     }
 
     public static void GoTeam() {
-        SceneManager.LoadScene("team");
+        SceneManager.LoadScene("TeamView");
     }
     
     public static void GoTeamInfoView() {
@@ -56,11 +56,20 @@ public class Route {
     }
 
     public static  void GoTeamRoom() {
-        SceneManager.LoadScene("teamroom");
+        SceneManager.LoadScene("TeamRoomView");
     }
 
     public static void GoGameView() {
         SceneManager.LoadScene("GameView");
+    }
+    public static void GoAsymmetricRoom()
+    {
+        SceneManager.LoadScene("AsymmetricRoom");
+    }
+
+    public static void GoAsymmetricMatchSetting()
+    {
+        SceneManager.LoadScene("AsymmetricMatchSetting");
     }
 
 }

@@ -15,11 +15,12 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Newtonsoft.Json;
-using com.huawei.game.gobes;
+using Com.Huawei.Game.Gobes;
 using UnityEngine.SceneManagement;
 
 public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
@@ -35,6 +36,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
 
     public Button stopFrameButton = null;
 
+    public Button fireButton = null;
     // 重开一局预制件
     public ReopenGame reopenGame = null;
 
@@ -47,20 +49,26 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     // 游戏画布
     public GameCanvas gameCanvas = null;
 
-    // 停止帧同步 -1不在帧同步中，0帧同步中，1停止帧同步
-    public int stopFrameSync = -1;
-
-    public Boolean goRoom = false, goHall = false, goTeam = false;
+    
+    private static int[] arr1 = {-90, 180, 90};
+    private static int[] arr2 = {90, -90, 0};
+    private static int[] arr3 = {180, 0, -90};
+    private static int[] arr4 = {90, 0, 180};
+    
+ 
 
     // Start is called before the first frame update
     void Start() {
         this.InitView();
         this.InitListener();
+        this.InitRobotSchedule();
     }
+
+  
 
     void InitView() {
         if (Global.Room == null || Global.Room.roomInfo == null ||
-            Global.Room.roomInfo.ownerId != Global.playerId) {
+            Global.Room.roomInfo.OwnerId != Global.playerId) {
             this.stopFrameButton.gameObject.SetActive(false);
         }
         FrameSync.ReCalcFrameState();
@@ -69,6 +77,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     // Update is called once per frame
     void Update() {
         float dt = Time.deltaTime;
+       
         if (Input.GetKeyDown(KeyCode.A)) {
             this.SendFrame(FrameSync.FrameSyncCmd.left);
         }
@@ -81,29 +90,18 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         if (Input.GetKeyDown(KeyCode.S)) {
             this.SendFrame(FrameSync.FrameSyncCmd.down);
         }
+        if (Input.GetKeyDown(KeyCode.K)) {
+            this.SendFireFrame(FrameSync.FrameSyncCmd.fire);
+        }
+        
         // 绘制玩家
         this.gameCanvas.SetPlayers(FrameSync.frameSyncPlayerList);
         // 绘制云朵
         this.gameCanvas.SetClouds(FrameSync.cloudsList, dt);
-        // 停止帧同步
-        if (stopFrameSync == 1) {
-            this.ReopenGame();
-            FrameSync.frameSyncPlayerList.Clear();
-            stopFrameSync = -1;
-        }
-        if (goHall) {
-            goHall = false;
-            Global.room = null;
-            Route.GoHall();
-        }
-        if (goRoom) {
-            goRoom = false;
-            Route.GoRoom();
-        }
-        if (goTeam) {
-            goTeam = false;
-            Route.GoTeam();
-        }
+        // 绘制子弹
+        this.gameCanvas.setBullets(FrameSync.frameSyncBulletList);
+        // 绘制圆圈
+        this.gameCanvas.SetCircle(GameView.circleDisplay);
     }
 
     void InitListener() {
@@ -122,15 +120,117 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         this.stopFrameButton.onClick.AddListener(() => {
             this.StopGame();
         });
+        this.fireButton.onClick.AddListener(() =>
+        {
+            this.SendFireFrame(FrameSync.FrameSyncCmd.fire);
+        });
+        
         if (Global.Room != null) {
             Global.Room.OnStopSyncFrame = () => this.OnStopFrameSync();
             Global.Room.OnLeave = playerInfo => OnLeave(playerInfo);
         }
     }
+    
+      private void InitRobotSchedule()
+    {
+
+        //玩家在线且为房主，调用机器人定时任务执行
+        if (Global.state==1 && Global.playerId == Global.Room.roomInfo.OwnerId)
+        {
+            InvokeRepeating("RobotRandomMove",2f,1f);
+        }
+    }
+
+    private  void RobotRandomMove()
+    {
+        
+        foreach (PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in FrameSync.frameSyncPlayerList)
+        {
+            if (player.isRobot == 1)
+            {
+                MockRobotMove(player);
+                string frameData = JsonConvert.SerializeObject(player);
+                // 调用SDK发送帧数据
+                string[] frameDatas = new string[] { frameData };
+                Debug.Log("发送机器人帧：" + frameData);
+                Global.Room.SendFrame(frameDatas, response => {});
+            }
+        }
+        
+    }
+    
+    private  void MockRobotMove(PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> playerInfo)
+    {
+        
+        switch (playerInfo.state.cmd)
+        {
+            case FrameSync.FrameSyncCmd.up:
+                if(playerInfo.y >= Math.Floor(RandomUtils.GetRandom() * -4)) {
+                    SelectRandomRotation(arr1, playerInfo);
+                }
+                else {
+                    playerInfo.y++;
+                    playerInfo.state.cmd = FrameSync.FrameSyncCmd.up;
+                }
+                break;
+            case FrameSync.FrameSyncCmd.down:
+                if(playerInfo.y <=  Math.Floor(RandomUtils.GetRandom() * 2)) {
+                    SelectRandomRotation(arr2, playerInfo);
+                }
+                else {
+                    playerInfo.y--;
+                    playerInfo.state.cmd = FrameSync.FrameSyncCmd.down;
+                }
+                break;
+            case FrameSync.FrameSyncCmd.left:
+                if(playerInfo.x <= Math.Floor(RandomUtils.GetRandom() * 10)) {
+                    SelectRandomRotation(arr3, playerInfo);
+                }
+                else {
+                    playerInfo.x--;
+                    playerInfo.state.cmd = FrameSync.FrameSyncCmd.left;
+                }
+                break;
+            case FrameSync.FrameSyncCmd.right:
+                if(playerInfo.x >= Math.Floor(RandomUtils.GetRandom() * -7)) {
+                    SelectRandomRotation(arr4, playerInfo);
+                }
+                else {
+                    playerInfo.x++;
+                    playerInfo.state.cmd = FrameSync.FrameSyncCmd.right;
+                }
+                break;
+                
+        }
+    }
+
+    private  void SelectRandomRotation(int[] arr,PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> playerInfo)
+    {
+        int rotation = arr[(int)Math.Floor(RandomUtils.GetRandom() * arr.Length)];
+        switch (rotation)
+        {
+            case 0 :
+                playerInfo.y = (playerInfo.y >= FrameSync._maxY ? FrameSync._maxY : ++playerInfo.y);
+                playerInfo.state.cmd = FrameSync.FrameSyncCmd.up;
+                break;
+            case 180 :
+                playerInfo.y = (playerInfo.y <= FrameSync._minY ? FrameSync._minY : --playerInfo.y);
+                playerInfo.state.cmd = FrameSync.FrameSyncCmd.down;
+                break;
+            case 90:
+                playerInfo.x = (playerInfo.x <= FrameSync._minX ? FrameSync._minX : --playerInfo.x);
+                playerInfo.state.cmd = FrameSync.FrameSyncCmd.left;
+                break;
+            case -90:
+                playerInfo.x = (playerInfo.x >= FrameSync._maxX ? FrameSync._maxX : ++playerInfo.x);
+                playerInfo.state.cmd = FrameSync.FrameSyncCmd.right;
+                break;
+        }
+    }
 
 
     // 调用SDK 发送帧消息
-    void SendFrame(FrameSync.FrameSyncCmd cmd) {
+    public void SendFrame(FrameSync.FrameSyncCmd cmd) {
         if (KeyOperateLimit()) {
             return;
         }
@@ -160,6 +260,62 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                     }
                     player.state.cmd = cmd;
                     string frameData = JsonConvert.SerializeObject(player);
+                    // 调用SDK发送帧数据
+                    string[] frameDatas = new string[] { frameData };
+                    Global.Room.SendFrame(frameDatas, response => {});
+                    break;
+                }
+            }
+        }
+    }
+
+    // 攻击指令帧发送
+    void SendFireFrame(FrameSync.FrameSyncCmd cmd)
+    {
+        if (KeyOperateLimit())
+        {
+            return;
+        }
+
+        List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList = FrameSync.frameSyncPlayerList;
+        string playerId = Global.playerId;
+        if (playerList != null && playerList.Count > 0)
+        {
+            for (int i = 0; i < playerList.Count; i++)
+            {
+                PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player = playerList[i];
+                if (player.id == playerId)
+                {
+                    BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet> bulletList =
+                        new BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet>();
+                    bulletList.rotation = player.rotation;
+                    bulletList.bulletId = Global.bulletId++;
+                    bulletList.state = new FrameSync.Bullet();
+                    bulletList.state.cmd = cmd;
+                    bulletList.playerId = player.id;
+                    bulletList.x = player.x;
+                    bulletList.y = player.y;
+                    // 计算子弹x、y实际大小
+                    int x = player.x;
+                    int y = player.y;
+                    // 子弹在飞机头上方一段距离生成。
+                    switch (bulletList.rotation)
+                    {
+                        case 0: // 向上
+                            bulletList.y = ++y;
+                            break;
+                        case 180: // 向下
+                            bulletList.y = --y;
+                            break;
+                        case 90: // 向左
+                            bulletList.x = --x;
+                            break;
+                        case -90: // 向右
+                            bulletList.x = ++x;
+                            break;
+                    }
+
+                    string frameData = JsonConvert.SerializeObject(bulletList);
                     // 调用SDK发送帧数据
                     string[] frameDatas = new string[] { frameData };
                     Global.Room.SendFrame(frameDatas, response => {});
@@ -199,6 +355,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
             Debug.Log("停止游戏中");
             if (response.RtnCode != 0) {
                 Dialog dia = Instantiate(dialog);
+                CancelInvoke("RobotRandomMove");
                 dia.Open("提示", "停止帧同步失败" + Util.ErrorMessage(response));
             }
         });
@@ -214,17 +371,17 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
 
     // 重开一局
     public void Reopen() {
-        Global.room.GetRoomDetail(response => {
+        Global.room.Update(response => {
             // 判断玩家是否还在房间内
             RoomInfo room = response.RoomInfo;
             Boolean inroom = IsInRoom(room);
             if (response.RtnCode != 0 || !inroom) {
                 Debug.Log("退出房间");
-                goHall = true;
+                UnityMainThread.wkr.AddJob(Route.GoHall);
             }
             if (inroom) {
                 Debug.Log("重开一局");
-                goRoom = true;
+                UnityMainThread.wkr.AddJob(Route.GoRoom);
             }
         });
     }
@@ -236,7 +393,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
 
     // 用户是否还在房间中
     Boolean IsInRoom(RoomInfo room) {
-        PlayerInfo[] players = room.players;
+        PlayerInfo[] players = room.Players;
         if (players != null && players.Length > 0) {
             foreach (PlayerInfo player in players) {
                 if (player.PlayerId == Global.playerId) {
@@ -267,6 +424,17 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         Global.client.LeaveRoom(response => {
             if (response.RtnCode == 0) {
                 Debug.Log("退出房间成功");
+                if (Global.isTeamMode && !Global.isOnlineMatch) {
+                    // 组队匹配
+                    UnityMainThread.wkr.AddJob(Route.GoTeam);
+                } else {
+                    // 在线匹配或者组房模式
+                    if (Global.isOnlineMatch) {
+                        // 在线匹配
+                        Global.isOnlineMatch = false;
+                    }
+                    UnityMainThread.wkr.AddJob(Route.GoHall);
+                }
             } else {
                 Dialog dia = Instantiate(dialog);
                 dia.Open("提示", "退出房间失败" + Util.ErrorMessage(response));
@@ -293,30 +461,36 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         this.Unready();
         if (!Global.isTeamMode) {
             // 房间匹配模式下，需要重开一局
-            stopFrameSync = 1;
+            UnityMainThread.wkr.AddJob(() => {
+                this.ReopenGame();
+                FrameSync.frameSyncPlayerList.Clear();
+                FrameSync.frameSyncBulletList.Clear();
+            });
         } else {
             FrameSync.frameSyncPlayerList.Clear();
+            FrameSync.frameSyncBulletList.Clear();
             this.LeaveRoom();
-            if (Global.isOnlineMatch) {
-                // 在线匹配
-                Global.isOnlineMatch = false;
-                goHall = true;
-            } else {
-                // 组房匹配
-                goTeam = true;
-            }
         }
     }
 
     // 离开房间
     void OnLeave(FramePlayerInfo playerInfo) {
         Debug.Log("广播--离开房间");
-        if (playerInfo.PlayerId == Global.playerId) {
-            goHall = true;
-        }
-        if (Global.isTeamMode) {
-            // 重新计算房间内的人员信息
+        // 重新计算房间内的人员信息
+        if (playerInfo.PlayerId != Global.playerId) {
             this.ReCalPlayers(playerInfo);
+        } else {
+            if (Global.isTeamMode && !Global.isOnlineMatch) {
+                // 组队匹配
+                UnityMainThread.wkr.AddJob(Route.GoTeam);
+            } else {
+                // 在线匹配或者组房模式
+                if (Global.isOnlineMatch) {
+                    // 在线匹配
+                    Global.isOnlineMatch = false;
+                }
+                UnityMainThread.wkr.AddJob(Route.GoHall);
+            }
         }
     }
 

@@ -17,8 +17,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Utils;
 
 public class RoomList : MonoBehaviour
 {
@@ -51,13 +51,13 @@ public class RoomList : MonoBehaviour
                 Destroy(content.transform.GetChild(i).gameObject);
             }
 
-            roomList = res.rooms;
+            roomList = res.Rooms;
             foreach (RoomInfo room in roomList)
             {
                 GameObject itemRoom = Instantiate(itemPrefb, content.transform);
                 itemRoom.SendMessage("RenderItem", room, SendMessageOptions.DontRequireReceiver);
             }
-            Debug.Log($"获取房间列表成功,有{res.count}条，当前从第{res.offset}秒开始");
+            Debug.Log($"获取房间列表成功,有{res.Count}条，当前从第{res.Offset}秒开始");
         }
         else
         {
@@ -126,7 +126,7 @@ public class RoomList : MonoBehaviour
     {
         if (res.RtnCode == 0)
         {
-            SceneManager.LoadScene("Room");
+            Route.GoRoom();
         }
         else
         {
@@ -137,7 +137,7 @@ public class RoomList : MonoBehaviour
 
     public void Back()
     {
-        SceneManager.LoadScene("Hall");
+        Route.GoHall();
     }
 
     public void RefreshList()
@@ -149,8 +149,8 @@ public class RoomList : MonoBehaviour
     {
         GetAvailableRoomsConfig getRoomReq = new GetAvailableRoomsConfig()
         {
-            roomType = Global.matchRule,
-            limit = limit,
+            RoomType = Global.matchRule,
+            Limit = limit,
         };
         Global.client.GetAvailableRooms(getRoomReq, RenderList);
     }

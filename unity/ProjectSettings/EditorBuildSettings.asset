@@ -10,7 +10,7 @@ EditorBuildSettings:
     guid: 00000000000000000000000000000000
   - enabled: 1
     path: Assets/Scenes/Home.unity
-    guid: c4d1dbc2b86e78944859b3e69dc1333e
+    guid: d95274d558dde264688b7546d7cfc793
   - enabled: 1
     path: Assets/Scenes/Hall.unity
     guid: 295c2f40e7b762c4692001b9f311a20e
@@ -30,12 +30,18 @@ EditorBuildSettings:
     path: Assets/Scenes/Room.unity
     guid: 1dd525b532029674d90d340438e5e411
   - enabled: 1
-    path: Assets/Scenes/team.unity
-    guid: 59fe99e26fd84e4409f67acbc58cccfe
-  - enabled: 1
-    path: Assets/Scenes/teamroom.unity
-    guid: 59bfd82862d76ae49bd5135b6b5a5568
-  - enabled: 1
     path: Assets/Scenes/GameView.unity
     guid: 2b5afdefff9a42a4ba80ee2f3545b220
+  - enabled: 1
+    path: Assets/Scenes/TeamView.unity
+    guid: c4ca360cb455e2149b92bffc19126769
+  - enabled: 1
+    path: Assets/Scenes/TeamRoomView.unity
+    guid: d2137ee445fa96a45a0988c9346cfd94
+  - enabled: 1
+    path: Assets/Scenes/AsymmetricMatchSetting.unity
+    guid: c16688e6c459df44482222630a888d8e
+  - enabled: 1
+    path: Assets/Scenes/AsymmetricRoom.unity
+    guid: 35cfa8905917e604a86b453795ea3405
   m_configObjects: {}

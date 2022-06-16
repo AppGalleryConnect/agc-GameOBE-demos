@@ -15,12 +15,13 @@
  */
 
 
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Room;
+
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Room;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using com.huawei.game.gobes.utils;
+using Com.Huawei.Game.Gobes.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -62,17 +63,14 @@ public class TeamRoom : MonoBehaviour
 
     public Dialog Dialog = null;
 
-    private Boolean IsGame = false;
-
-    private Boolean IsBegin = false;
-    
     public Reloading Loading = null;
+
+    public static readonly int FontSize = 14;
+
     
     // -1 断线中 0 断线重连 1 重连成功 2 重连失败 
     private FrameSync.ReConnectState isReConnect = FrameSync.ReConnectState.reConnectionDefault;
 
-    public Boolean goHall = false;
-    
     // 定时
     private float interval = 2f; // 每隔2秒执行一次
     private float count = 0;
@@ -99,52 +97,13 @@ public class TeamRoom : MonoBehaviour
                 ReConnectRoom();
             }
         }
-        if (IsBegin)
-        {
-            OnStartFrameSync();
-            IsBegin = false;
-        }
-        if (IsGame) {
-            SceneManager.LoadScene("GameView");
-            IsGame = false;
-        }
-        if (goHall) {
-            goHall = false;
-            GoHall();
-        }
-        // 断线重连
-        if (isReConnect == FrameSync.ReConnectState.reConnection) {
-            Reloading loading = Instantiate(Loading);
-            loading.Open("重连中...");
-            isReConnect = FrameSync.ReConnectState.reConnectIng;
-        }
-        
-        // 重连失败
-        if (isReConnect == FrameSync.ReConnectState.reConnectFail) {
-            this.ReLogin();
-            GoHall();
-            isReConnect = FrameSync.ReConnectState.reConnectionDefault;
-        }
-        
-        // 重连成功
-        if (isReConnect == FrameSync.ReConnectState.reConnectSuccess) {
-            GameObject loading = GameObject.Find("/loading2(Clone)");
-            Destroy(loading);
-            isReConnect = FrameSync.ReConnectState.reConnectionDefault;
-        }
-    }
-    
-    // 页面跳转
-    private void GoHall()
-    {
-        SceneManager.LoadScene("Hall");
     }
 
     public void InitRoomView()
     {
         if (Global.Room != null)
         {
-            Global.room.GetRoomDetail(response =>
+            Global.room.Update(response =>
             {
                 if (response.RtnCode == 0)
                 {
@@ -170,18 +129,25 @@ public class TeamRoom : MonoBehaviour
         RoomInfo roomInfo = Global.Room != null ? Global.Room.roomInfo : null;
         Global.player = Global.Room._player;
         bool allPlayersStatus = true;
-        if (roomInfo.players.Length > 0) {
+        if (roomInfo.Players.Length > 0) {
             string redTeam = "0";
             ArrayList players = new ArrayList();
 
             int playerNo = 1;
 
-            for (int i = 0; i < roomInfo.players.Length; i++) {
-                PlayerInfo player = roomInfo.players[i];
+            for (int i = 0; i < roomInfo.Players.Length; i++) {
+                PlayerInfo player = roomInfo.Players[i];
+                if (player.IsRobot == 1)
+                {
+                    player.CustomPlayerStatus = 1;
+                    player.Status = 1;
+                    player.CustomPlayerProperties = Util._robotPrefix + player.PlayerId;
+                }
+
                 // 渲染在线玩家
                 if (player.Status == 1) {
                     // 非房主
-                    if (player.PlayerId != roomInfo.ownerId)
+                    if (player.PlayerId != roomInfo.OwnerId)
                     {
                         players.Add(player);
                         if (player.CustomPlayerStatus == 0)
@@ -194,7 +160,7 @@ public class TeamRoom : MonoBehaviour
                         this.PlayerOwnerName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
                     }
                 }
-                if (player.PlayerId == roomInfo.ownerId)
+                if (player.PlayerId == roomInfo.OwnerId)
                 {
                     redTeam = player.TeamId;
                 }
@@ -214,7 +180,7 @@ public class TeamRoom : MonoBehaviour
                 }
             }
         }
-        if (roomInfo.ownerId != Global.playerId)
+        if (roomInfo.OwnerId != Global.playerId)
         {
             this.StartBtn.gameObject.SetActive(false);
         }
@@ -239,7 +205,16 @@ public class TeamRoom : MonoBehaviour
                     this.ReadyBtnOne.gameObject.SetActive(!isPlayerStatus);     
                 }
                 this.PlayerOneStatus.text = isPlayerStatus ? "已准备" : "未准备";
-                this.PlayerOneName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                if (player.IsRobot==1)
+                {
+                    this.PlayerOneName.fontSize = FontSize;
+                    this.PlayerOneName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                }
+                else
+                {
+                    this.PlayerOneName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                }
+
 
 
                 break;
@@ -249,7 +224,15 @@ public class TeamRoom : MonoBehaviour
                     this.ReadyBtnThree.gameObject.SetActive(!isPlayerStatus);
                 }
                 this.PlayerThreeStatus.text = isPlayerStatus ? "已准备" : "未准备";
-                this.PlayerThreeName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                if (player.IsRobot==1)
+                {
+                    this.PlayerThreeName.fontSize = FontSize;
+                    this.PlayerThreeName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                }
+                else
+                {
+                    this.PlayerThreeName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                }
                 break;
         }
     }
@@ -262,7 +245,16 @@ public class TeamRoom : MonoBehaviour
             this.ReadyBtnTwo.gameObject.SetActive(!isPlayerStatus);
         }
         this.PlayerTwoStatus.text = isPlayerStatus ? "已准备" : "未准备";
-        this.PlayerTwoName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+        if (player.IsRobot==1)
+        {
+            this.PlayerTwoName.fontSize = FontSize;
+            this.PlayerTwoName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+        }
+        else
+        {
+            this.PlayerTwoName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+        }
+
     }
 
     void ReConnectRoom() {
@@ -273,8 +265,21 @@ public class TeamRoom : MonoBehaviour
                 if (response.RtnCode == 0) {
                     // 重连成功
                     Debug.Log("玩家重连成功");
-                    this.isReConnect = FrameSync.ReConnectState.reConnectSuccess;
-                } 
+                    UnityMainThread.wkr.AddJob(() => {
+                        GameObject loading = GameObject.Find("/loading2(Clone)");
+                        Destroy(loading);
+                        isReConnect = FrameSync.ReConnectState.reConnectionDefault;
+                    });
+                }
+                if (response.RtnCode == ((int)ErrorCode.SDK_NOT_IN_ROOM))
+                {
+                    Debug.Log("玩家重连失败");
+                    UnityMainThread.wkr.AddJob(() => {
+                        this.ReLogin();
+                        Route.GoHall();
+                        isReConnect = FrameSync.ReConnectState.reConnectionDefault;
+                    });
+                }
             });
         } catch (SDKException e){
             SDKDebugLogger.Log(e.Message);
@@ -282,7 +287,11 @@ public class TeamRoom : MonoBehaviour
                 || e.code == (int) ErrorCode.INVALID_ROOM_STATUS) {
                 // 重连失败
                 Debug.Log("重连失败");
-                this.isReConnect = FrameSync.ReConnectState.reConnectFail;
+                UnityMainThread.wkr.AddJob(() => {
+                    this.ReLogin();
+                    Route.GoHall();
+                    isReConnect = FrameSync.ReConnectState.reConnectionDefault;
+                });
             } else {
                 SDKDebugLogger.Log("玩家持续重连中...");
             }
@@ -344,14 +353,19 @@ public class TeamRoom : MonoBehaviour
     public void StartTeamGame()
     {
         Debug.Log("开始组队匹配游戏");
-        Global.room.GetRoomDetail(response => {
+        Global.room.Update(response => {
             if (response.RtnCode == 0)
             {
                 int readyStatus = 1;
-                PlayerInfo[] players = response.RoomInfo.players;
+                PlayerInfo[] players = response.RoomInfo.Players;
                 foreach (PlayerInfo player in players)
                 {
-                    if (player.PlayerId != response.RoomInfo.ownerId)
+                    if (player.IsRobot == 1)
+                    {
+                        player.CustomPlayerStatus = 1;
+                    }
+
+                    if (player.PlayerId != response.RoomInfo.OwnerId)
                     {
                         if (player.CustomPlayerStatus == 0)
                         {
@@ -370,8 +384,10 @@ public class TeamRoom : MonoBehaviour
                         if (res.RtnCode == 0)
                         {
                             // 开始帧同步成功
-                            IsBegin = true;
                             Debug.Log("开始帧同步成功");
+                            UnityMainThread.wkr.AddJob(() => {
+                                OnStartFrameSync();
+                            });
                         }
                         else
                         {
@@ -400,7 +416,7 @@ public class TeamRoom : MonoBehaviour
         if (Global.playerId == playerInfo.PlayerId)
         {
             this.ReLogin();
-            goHall = true;
+            UnityMainThread.wkr.AddJob(Route.GoHall);
         }
         else
         {
@@ -410,18 +426,20 @@ public class TeamRoom : MonoBehaviour
 
     void OnDisconnect(FramePlayerInfo playerInfo) {
         Debug.Log("广播--组队玩家掉线");
-        if (playerInfo.PlayerId == Global.playerId)
-        {
-            isReConnect = FrameSync.ReConnectState.reConnection;
+        if (playerInfo.PlayerId == Global.playerId) {
+            UnityMainThread.wkr.AddJob(() => {
+                Reloading loading = Instantiate(Loading);
+                loading.Open("重连中...");
+                isReConnect = FrameSync.ReConnectState.reConnectIng;
+            });
         }
     }
 
-    void OnStartFrameSync()
-    {
+    void OnStartFrameSync() {
         Debug.Log("开始帧同步");
         Global.state = 1;
         Global.keyOperate = 1;
-        this.IsGame = true; 
+        UnityMainThread.wkr.AddJob(Route.GoGameView);
     }
 
 }

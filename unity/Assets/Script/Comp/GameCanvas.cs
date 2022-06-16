@@ -28,16 +28,52 @@ public class GameCanvas : MonoBehaviour {
     // 初始化云朵对象池
     Dictionary<int, GameObject> cloudDictionnary = new Dictionary<int, GameObject>();
 
+    // 初始化子弹对象池
+    public List<GameObject> bulletsPool = new List<GameObject>();
+
+    // 初始化圆圈对象池
+    public List<GameObject> circlesPool = new List<GameObject>();
     // 玩家预制件
     public GameObject playerPrefab;
 
     // 云朵预制件
     public GameObject cloudPrefab;
 
-    // Start is called before the first frame update
-    void Start() {
+    // 子弹预制件
+    public GameObject bullectPrefab;
+    
+    // 圆圈预制件
+    public GameObject circlePrefab;
+    
+    public void SetCircle(bool circleDisplay)
+    {
+        if (circlePrefab == null) {
+            return;
+        }
+        if (circleDisplay)
+        {
+            if (circlesPool.Count <= 0)
+            {
+                GameObject circleGameObject = Instantiate(circlePrefab);
+                circlesPool.Add(circleGameObject);
+                Circle circle =circlesPool[0].GetComponent<Circle>();
+                circle.initCircle();
+            }
+            
+        }
+        else
+        {
+            if (circlesPool.Count <= 0) {
+                return;
+            }
+            foreach (GameObject circle in circlesPool)
+            {
+                Destroy(circle);
+            }
+            circlesPool.Clear();
+        }
     }
-
+    
     public void SetPlayers(List<PlayerData<FrameSync.Player>> players)
     {
         if (playerPrefab == null) {
@@ -109,5 +145,40 @@ public class GameCanvas : MonoBehaviour {
             }
         }
     }
-    
+
+    public void setBullets(List<BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet>> bullets)
+    {
+        if (bullectPrefab == null)
+        {
+            return;
+        }
+        if (bullets == null || bullets.Count < 0)
+        {
+            return;
+        }
+        if (bulletsPool.Count != bullets.Count || bullets.Count == 0) {
+            // 清空预制件
+            if (bulletsPool.Count != 0)
+            {
+                foreach (GameObject bullet in bulletsPool)
+                {
+                    Destroy(bullet);
+                }
+                bulletsPool.Clear();
+            }
+            // 重新初始化预制件
+            for (int i = 0; i < bullets.Count; i++) {
+                GameObject bulletGameObject = Instantiate(bullectPrefab);
+                bulletsPool.Add(bulletGameObject);
+            }
+        }
+
+        // 绘制子弹
+        for (int index = 0; index < bullets.Count; index++) {
+            BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet> bullet = bullets[index];
+            Bullet bulletView = bulletsPool[index].GetComponent<Bullet>();
+            bulletView.initBullet(bullet.x, bullet.y, bullet.playerId, bullet.bulletId);
+        }
+    }
+
 }

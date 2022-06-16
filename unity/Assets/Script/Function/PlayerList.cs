@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -28,6 +29,7 @@ public class PlayerList<T> {
         public int rotation { get; set; }
         public string playerTeamId { get; set; }
         public T state { get; set; }
+        public int isRobot { get; set; }
     }
 
     public List<PlayerData<T>> Players = new List<PlayerData<T>>(); 

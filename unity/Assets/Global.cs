@@ -14,10 +14,10 @@
  *  limitations under the License.
  */
 
-using com.huawei.game.gobes;
-using com.huawei.game.gobes.Group;
-using com.huawei.game.gobes.Player;
-using com.huawei.game.gobes.Room;
+using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Group;
+using Com.Huawei.Game.Gobes.Player;
+using Com.Huawei.Game.Gobes.Room;
 using System;
 
 public class Global {
@@ -28,15 +28,27 @@ public class Global {
     public static Room room = null;
     public static RoomInfo[] roomInfos = null;
 
-    public static string gameId = Config.gameId;
+    public static string gameId = null;
+    public static string gameSecret = null;
+    public static string matchCode = null;
     public static int state = 0; // 帧同步状态 0停止帧同步，1开始帧同步
     public static int keyOperate = 1; // 按键操作限制 0限制操作，1允许操作
     public static string playerId = "";
     public static string matchRule = "0"; // 匹配规则 0-菜鸟区，1-高手区
     public static int roomId = 0;
     public static Boolean isTeamMode = false;
+    public static Boolean isAsymmetric = false;
     public static Boolean isOnlineMatch = false;
     public static string playerName = "";
+    public static int bulletId = 0;
+    public static int handleFrameRate = 3;
+    public static string level = null;
+    public static string age = null;
+    public static string power = null;
+    public static string skill = null;
+    public static string weapon = null;
+    public static string teamNumber = null;
+
 
     internal static Room Room { get => room; set => room = value; }
 }

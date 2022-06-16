@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,28 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-using System;
-using System.Collections.Generic;
-using UnityEngine;
 
-public class UnityMainThread : MonoBehaviour
+using Newtonsoft.Json;
+
+public class AckData 
 {
-    internal static UnityMainThread wkr;
-    Queue<Action> jobs = new Queue<Action>();
+    [JsonProperty("playerName")]
+    public string PlayerName { get; set; }
+    [JsonProperty("teamNumber")]
+    public string TeamNumber { get; set; }
 
-    void Awake()
-    {
-        wkr = this;
-    }
-
-    void Update()
-    {
-        while (jobs.Count > 0)
-            jobs.Dequeue().Invoke();
-    }
-
-    internal void AddJob(Action newJob)
-    {
-        jobs.Enqueue(newJob);
-    }
 }

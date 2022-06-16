@@ -16,7 +16,7 @@
 
 using UnityEngine;
 using UnityEngine.UI;
-using com.huawei.game.gobes;
+using Com.Huawei.Game.Gobes;
 
 public class RoomItem : MonoBehaviour
 {
@@ -26,8 +26,8 @@ public class RoomItem : MonoBehaviour
 
     public void RenderItem(RoomInfo info)
     {
-        roomId.text = info.roomId;
-        roomName.text = info.roomName;
+        roomId.text = info.RoomId;
+        roomName.text = info.RoomName;
     }
 
     public void JoinRoom()
