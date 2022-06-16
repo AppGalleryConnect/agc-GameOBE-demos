@@ -20,6 +20,7 @@ export default {
     openId: Util.mockOpenId(), // 区别不同用户
     grantType: "client_credentials",
     asymmetric: false,
+    handleFrameRate: 3, //补帧的速率（出现补帧时，每次处理3帧）
 
     gameId: "",
     clientId: "",

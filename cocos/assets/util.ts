@@ -51,7 +51,7 @@ export function getPlayerMatchParams() {
 export function getTeamMatchParams() {
     if (config.asymmetric) {
         return {
-            matchParams : { "ack" : mockAck()}
+            matchParams : { "teamNumber" : mockAck()}
         };
     } else {
         return null;
@@ -67,7 +67,7 @@ export function  getCustomPlayerProperties() {
     let data: Object = {};
     const teamMatchParams = getTeamMatchParams();
     if(teamMatchParams){    //非对称匹配传的player属性
-        ack = teamMatchParams.matchParams.ack;
+        ack = teamMatchParams.matchParams.teamNumber;
         data = {
             ack, playerName
         }

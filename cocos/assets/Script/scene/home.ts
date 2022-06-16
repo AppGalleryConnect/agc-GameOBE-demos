@@ -30,10 +30,12 @@ export default class Home extends cc.Component {
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
 
+    @property(cc.EditBox)
+    accessTokenEdit: cc.EditBox = null;
+
     start() {
         this.initDialog();
         this.initListener();
-        this.initSDK();
     }
 
     initDialog() {
@@ -42,21 +44,17 @@ export default class Home extends cc.Component {
         dialogNode.parent = this.node;
     }
 
-    async initSDK() {
-
+    initSDK() {
         if (Util.isInited()) {
             return Util.printLog("SDK 已经初始化，无需重复操作");
         }
-
-        // @ts-ignore
         const client = new window.GOBE.Client({
             appId: configs.gameId,
             openId: configs.openId, // 区别不同用户
-            channel: configs.channel,
             clientId: configs.clientId,
-            clientSecret: configs.clientSecret
+            clientSecret: configs.clientSecret,
+            accessToken: this.accessTokenEdit.string,
         });
-
         Util.printLog("正在初始化 SDK");
         client.init().then(() => {
             // 鉴权成功
@@ -65,9 +63,10 @@ export default class Home extends cc.Component {
             global.client = client;
             // demo生成昵称保存到global
             global.playerName = Util.mockPlayerName();
+            cc.director.loadScene("hall");
         }).catch((e) => {
             // 鉴权失败
-            Dialog.open("提示", "鉴权失败" + Util.errorMessage(e));
+            Dialog.open("提示", "鉴权失败，请重新刷新页面");
         });
     }
 
@@ -76,11 +75,7 @@ export default class Home extends cc.Component {
     }
 
     goHall() {
-        if (Util.isInited()) {
-            cc.director.loadScene("hall")
-        } else {
-            Dialog.open("提示", "鉴权失败，请重新刷新页面");
-        }
+        this.initSDK();
     }
 
     onDisable() {

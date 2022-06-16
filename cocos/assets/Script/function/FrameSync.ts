@@ -267,7 +267,11 @@ export function calcFrame(frame: GOBE.ServerFrameMessage) {
                             handleCollide(obj);
                             break;
                         default:
-                            setPlayerCMD(frameItem.playerId, obj["cmd"], obj["x"], obj["y"]);
+                            if(obj["playerId"]) {
+                                setPlayerCMD(obj["playerId"], obj["cmd"], obj["x"], obj["y"]);
+                            } else {
+                                setPlayerCMD(frameItem.playerId, obj["cmd"], obj["x"], obj["y"]);
+                            }
                     }
                 });
             }

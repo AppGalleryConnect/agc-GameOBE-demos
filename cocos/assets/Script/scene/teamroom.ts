@@ -117,7 +117,7 @@ export default class TeamRoom extends cc.Component {
             let playerNo = 1;
             for (let i = 0; i < roomInfo.players.length; i++) {
                 let player = roomInfo.players[i];
-                if (player.status === PlayerOnline.online) {
+                if (player.status === PlayerOnline.online || player.isRobot === 1) {
                     // 渲染在线玩家
                     if (player.playerId !== roomInfo.ownerId) {
                         // 非房主
@@ -157,40 +157,71 @@ export default class TeamRoom extends cc.Component {
 
     private setYellowPlayer(player, playerNo: number) {
         let isPlayerStatus = player.customPlayerStatus === 1;
-        let playerProperties = JSON.parse(player.customPlayerProperties);
-        let playerName = playerProperties["playerName"];
-        switch (playerNo) {
-            case 1:
-                if (player.playerId === global.playerId) {
-                    this.unReadyOneBtn.active = isPlayerStatus;
-                    this.readyOneBtn.active = !(isPlayerStatus);
-                }
-                this.playerOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
-                this.playerOneName.string = playerName ?
-                    playerName : player.playerId;
-                break;
-            case 3:
-                if (player.playerId === global.playerId) {
-                    this.unReadyThreeBtn.active = isPlayerStatus;
-                    this.readyThreeBtn.active = !(isPlayerStatus);
-                }
-                this.playerThreeStatus.string = isPlayerStatus ? "已准备" : "未准备";
-                this.playerThreeName.string = playerName ?
-                    playerName : player.playerId;
-                break;
+        let playerName = '';
+
+        if(player.isRobot === 1) {
+            playerName = '机器人' + player.playerId;
+            switch (playerNo) {
+                case 1:
+                    this.playerOneName.fontSize = 10;
+                    this.playerOneStatus.string = "已准备";
+                    this.playerOneName.string = playerName;
+                    this.unReadyOneBtn.active = false;
+                    this.readyOneBtn.active = false;
+                    break;
+                case 3:
+                    this.playerThreeName.fontSize = 10;
+                    this.playerThreeStatus.string = "已准备";
+                    this.playerThreeName.string = playerName;
+                    this.unReadyThreeBtn.active = false;
+                    this.readyThreeBtn.active = false;
+                    break;
+            }
+        } else {
+            let playerProperties = JSON.parse(player.customPlayerProperties);
+            playerName = playerProperties["playerName"];
+            switch (playerNo) {
+                case 1:
+                    if (player.playerId === global.playerId) {
+                        this.unReadyOneBtn.active = isPlayerStatus;
+                        this.readyOneBtn.active = !(isPlayerStatus);
+                    }
+                    this.playerOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
+                    this.playerOneName.string = playerName ?
+                        playerName : player.playerId;
+                    break;
+                case 3:
+                    if (player.playerId === global.playerId) {
+                        this.unReadyThreeBtn.active = isPlayerStatus;
+                        this.readyThreeBtn.active = !(isPlayerStatus);
+                    }
+                    this.playerThreeStatus.string = isPlayerStatus ? "已准备" : "未准备";
+                    this.playerThreeName.string = playerName ?
+                        playerName : player.playerId;
+                    break;
+            }
         }
     }
 
     private setRedPlayer(player) {
-        let isPlayerStatus = player.customPlayerStatus === 1;
-        if (player.playerId === global.playerId) {
-            this.unReadyTwoBtn.active = isPlayerStatus;
-            this.readyTwoBtn.active = !(isPlayerStatus);
+        if(player.isRobot === 1) {
+            this.playerTwoName.fontSize = 10;
+            this.playerTwoStatus.string = "已准备";
+            this.playerTwoName.string = "机器人" + player.playerId;
+            this.unReadyTwoBtn.active = false;
+            this.readyTwoBtn.active = false;
+        } else {
+            let isPlayerStatus = player.customPlayerStatus === 1;
+            if (player.playerId === global.playerId) {
+                this.unReadyTwoBtn.active = isPlayerStatus;
+                this.readyTwoBtn.active = !(isPlayerStatus);
+            }
+            this.playerTwoStatus.string = isPlayerStatus ? "已准备" : "未准备";
+            let playerProperties = JSON.parse(player.customPlayerProperties);
+            this.playerTwoName.string =  playerProperties["playerName"] ?
+                playerProperties["playerName"] : player.playerId;
         }
-        this.playerTwoStatus.string = isPlayerStatus ? "已准备" : "未准备";
-        let playerProperties = JSON.parse(player.customPlayerProperties);
-        this.playerTwoName.string =  playerProperties["playerName"] ?
-            playerProperties["playerName"] : player.playerId;
+
     }
 
     initListener() {

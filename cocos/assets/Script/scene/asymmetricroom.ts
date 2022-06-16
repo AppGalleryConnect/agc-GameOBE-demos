@@ -127,36 +127,36 @@ export default class AsymmetricRoom extends cc.Component {
         // 房主玩家
         const ownerPlayer = players.find(p => p.playerId === roomInfo.ownerId);
         let ownerTeamId: string =  ownerPlayer.teamId;
-        // 房主在红队还是黄队？
-        let ownerProperties = JSON.parse(ownerPlayer.customPlayerProperties);
-        let ack: number = ownerProperties["ack"];
+
+        let ownerTeamArr = players.filter(p => p.teamId === ownerTeamId);
+        let otherTeamArr = players.filter(p => p.teamId !== ownerTeamId);
         let allReadyCount: number = 0;
-        if(0 < ack && ack < 11){    // 根据assets/util.ts中ack的值,表示的是1人队的一方
+        let ownerProperties = JSON.parse(ownerPlayer.customPlayerProperties);
+        // 房主单独一队，则在黄队
+        if (ownerTeamArr.length === 1) {
             // 房主在黄队：渲染黄队1为房主
             this.yellowOneName.string = ownerProperties["playerName"];
             this.yellowOneReadyBtn.active = false;
             this.yellowOneUnReadyBtn.active = false;
             this.yellowOneStatus.string = "房主";
-            //渲染红队
-            const redTeamPlayers = players.filter(p => p.teamId !== ownerTeamId);
-            if(redTeamPlayers[0]){
-                allReadyCount = this.drawRedOne(redTeamPlayers[0], allReadyCount);
+            // 渲染红队
+            if (otherTeamArr[0]) {
+                allReadyCount = this.drawRedOne(otherTeamArr[0], allReadyCount);
             }
-            if(redTeamPlayers[1]){
-                allReadyCount = this.drawRedTwo(redTeamPlayers[1], allReadyCount);
+            if(otherTeamArr[1]){
+                allReadyCount = this.drawRedTwo(otherTeamArr[1], allReadyCount);
             }
-            if(redTeamPlayers[2]){
-                allReadyCount = this.drawRedThree(redTeamPlayers[2], allReadyCount);
+            if(otherTeamArr[2]){
+                allReadyCount = this.drawRedThree(otherTeamArr[2], allReadyCount);
             }
-        }else{
+        } else {
             // 房主在红队：渲染红队1为房主
             this.redOneName.string = ownerProperties["playerName"];
             this.redOneReadyBtn.active = false;
             this.redOneUnReadyBtn.active = false;
             this.redOneStatus.string = "房主";
             // 除房主以外的其他红队成员
-            const redTeamPlayers = players.filter(p => p.teamId === ownerTeamId
-                && p.playerId !== roomInfo.ownerId);
+            const redTeamPlayers = ownerTeamArr.filter(p => p.playerId !== roomInfo.ownerId);
             if(redTeamPlayers[0]){
                 allReadyCount = this.drawRedTwo(redTeamPlayers[0], allReadyCount);
             }
@@ -164,11 +164,11 @@ export default class AsymmetricRoom extends cc.Component {
                 allReadyCount = this.drawRedThree(redTeamPlayers[1], allReadyCount);
             }
             // 渲染黄队
-            const yellowTeamPlayers = players.filter(p => p.teamId !== ownerTeamId);
-            if(yellowTeamPlayers[0]){
-                allReadyCount = this.drawYellowOne(yellowTeamPlayers[0], allReadyCount);
+            if(otherTeamArr[0]){
+                allReadyCount = this.drawYellowOne(otherTeamArr[0], allReadyCount);
             }
         }
+
         // 渲染“开始游戏按钮”
         if(roomInfo.ownerId === global.playerId){   //是否当前玩家
             //除了房主以外的3个人准备就绪
@@ -188,14 +188,25 @@ export default class AsymmetricRoom extends cc.Component {
      * @private
      */
     private drawYellowOne(player: PlayerInfo, allReadyCount: number) {
-        let playerProperties = JSON.parse(player.customPlayerProperties);
-        this.yellowOneName.string = playerProperties["playerName"];
-        let isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
-        if(player.playerId === global.playerId){    // 当前玩家才考虑按钮的显示与隐藏
-            this.yellowOneUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
-            this.yellowOneReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+        let isPlayerStatus = false;
+        if(player.isRobot === 1) {
+            this.yellowOneName.fontSize = 10;
+            this.yellowOneName.string = "机器人" + player.playerId;
+            this.yellowOneStatus.string = "已准备";
+            this.yellowOneUnReadyBtn.active = isPlayerStatus;
+            this.yellowOneReadyBtn.active = isPlayerStatus;
+            isPlayerStatus = !(isPlayerStatus);
+        } else {
+            let playerProperties = JSON.parse(player.customPlayerProperties);
+            this.yellowOneName.string = playerProperties["playerName"];
+            isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
+            if(player.playerId === global.playerId){    // 当前玩家才考虑按钮的显示与隐藏
+                this.yellowOneUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
+                this.yellowOneReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+            }
+            this.yellowOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
         }
-        this.yellowOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
+
         if (isPlayerStatus) {
             allReadyCount ++ ;
         }
@@ -209,14 +220,24 @@ export default class AsymmetricRoom extends cc.Component {
      * @private
      */
     private drawRedOne(player: PlayerInfo, allReadyCount: number) {
-        let playerProperties = JSON.parse(player.customPlayerProperties);
-        this.redOneName.string = playerProperties["playerName"];
-        let isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
-        if(player.playerId === global.playerId){    // 当前玩家才考虑按钮的显示与隐藏
-            this.redOneUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
-            this.redOneReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+        let isPlayerStatus = false;
+        if(player.isRobot === 1) {
+            this.redOneName.fontSize = 10;
+            this.redOneName.string = "机器人" + player.playerId;
+            this.redOneStatus.string = "已准备";
+            this.redOneUnReadyBtn.active = isPlayerStatus;
+            this.redOneReadyBtn.active = isPlayerStatus;
+            isPlayerStatus = !(isPlayerStatus);
+        } else {
+            let playerProperties = JSON.parse(player.customPlayerProperties);
+            this.redOneName.string = playerProperties["playerName"];
+            isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
+            if(player.playerId === global.playerId){    // 当前玩家才考虑按钮的显示与隐藏
+                this.redOneUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
+                this.redOneReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+            }
+            this.redOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
         }
-        this.redOneStatus.string = isPlayerStatus ? "已准备" : "未准备";
         if (isPlayerStatus) {
             allReadyCount ++ ;
         }
@@ -230,17 +251,28 @@ export default class AsymmetricRoom extends cc.Component {
      * @private
      */
     private drawRedTwo(player: PlayerInfo, allReadyCount: number) {
-        let playerProperties = JSON.parse(player.customPlayerProperties);
-        this.redTwoName.string = playerProperties["playerName"];
-        let isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
-        if(player.playerId === global.playerId){
-            this.redTwoUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
-            this.redTwoReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+        let isPlayerStatus = false;
+        if(player.isRobot === 1) {
+            this.redTwoName.fontSize = 10;
+            this.redTwoName.string = "机器人" + player.playerId;
+            this.redTwoStatus.string = "已准备";
+            this.redTwoUnReadyBtn.active = isPlayerStatus;
+            this.redTwoReadyBtn.active = isPlayerStatus;
+            isPlayerStatus = !(isPlayerStatus);
+        } else {
+            let playerProperties = JSON.parse(player.customPlayerProperties);
+            this.redTwoName.string = playerProperties["playerName"];
+            isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
+            if(player.playerId === global.playerId){
+                this.redTwoUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
+                this.redTwoReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+            }
+            this.redTwoStatus.string = isPlayerStatus ? "已准备" : "未准备";
         }
-        this.redTwoStatus.string = isPlayerStatus ? "已准备" : "未准备";
         if (isPlayerStatus) {
             allReadyCount ++ ;
         }
+
         return allReadyCount;
     }
 
@@ -251,14 +283,25 @@ export default class AsymmetricRoom extends cc.Component {
      * @private
      */
     private drawRedThree(player: PlayerInfo, allReadyCount: number) {
-        let playerProperties = JSON.parse(player.customPlayerProperties);
-        this.redThreeName.string = playerProperties["playerName"];
-        let isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
-        if(player.playerId === global.playerId){
-            this.redThreeUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
-            this.redThreeReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+        let isPlayerStatus = false;
+        if(player.isRobot === 1) {
+            this.redThreeName.fontSize = 10;
+            this.redThreeName.string = "机器人" + player.playerId;
+            this.redThreeStatus.string = "已准备";
+            this.redThreeUnReadyBtn.active = isPlayerStatus;
+            this.redThreeReadyBtn.active = isPlayerStatus;
+            isPlayerStatus = !(isPlayerStatus);
+        } else {
+            let playerProperties = JSON.parse(player.customPlayerProperties);
+            this.redThreeName.string = playerProperties["playerName"];
+            isPlayerStatus = player.customPlayerStatus === 1; // 玩家已准备
+            if(player.playerId === global.playerId){
+                this.redThreeUnReadyBtn.active = isPlayerStatus;  // "取消准备"按钮激活
+                this.redThreeReadyBtn.active = !(isPlayerStatus); // "准备"按钮隐藏
+            }
+            this.redThreeStatus.string = isPlayerStatus ? "已准备" : "未准备";
         }
-        this.redThreeStatus.string = isPlayerStatus ? "已准备" : "未准备";
+
         if (isPlayerStatus) {
             allReadyCount ++ ;
         }

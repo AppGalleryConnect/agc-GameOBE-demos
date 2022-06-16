@@ -33,6 +33,7 @@ class GlobalData {
     public isOnlineMatch: boolean = false;
     public playerName: string = "";
     public bulletId: number = 0;
+    public unhandleFrames: GOBE.ServerFrameMessage[] = []; //未处理的帧
 }
 
 export default new GlobalData();

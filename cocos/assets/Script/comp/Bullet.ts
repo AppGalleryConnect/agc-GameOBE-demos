@@ -15,8 +15,7 @@
  */
 
 import global from "../../global";
-import {CollideTagEnum, frameSyncBulletList, FrameSyncCmd, Team} from "../function/FrameSync";
-import GameCanvas from "./GameCanvas";
+import {CollideTagEnum, frameSyncBulletList, FrameSyncCmd} from "../function/FrameSync";
 
 const {ccclass, property} = cc._decorator;
 /**
@@ -29,9 +28,7 @@ export default class Bullet extends cc.Component {
     speed: number = 20;
 
     isDie: boolean = false;
-    // //子弹运行方向（角度表示例如0表示向上） todo 暂时没有作用
-    // rotation: number = 0;
-    //
+
     bullectId: number = 0;
 
     playerId: string = "";

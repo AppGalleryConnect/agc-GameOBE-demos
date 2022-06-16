@@ -46,9 +46,7 @@ import Reloading from "../comp/Reloading";
 import {PlayerInfo, Room} from "../../GOBE/GOBE";
 import {CloudData} from "../function/CloudList";
 import GameCanvas from "../comp/GameCanvas";
-import {BulletData} from "../function/BulletList";
-import {PlayerData} from "../function/PlayerList";
-import Circle from "../comp/Circle";
+import config from "../../config";
 
 
 
@@ -87,9 +85,13 @@ export default class Game extends cc.Component {
     // 出现云朵的频次
     public frequency = 50;
 
+    // 机器人定时任务
+    public robotIntervalTask = null;
+
     start() {
         this.initView();
         this.initListener();
+        this.initRobotSchedule();
     }
 
     initView() {
@@ -127,6 +129,98 @@ export default class Game extends cc.Component {
         }
     }
 
+    initRobotSchedule() {
+        let robotArr = global.room.players.filter(player => player.isRobot === 1);
+        if (global.state === 1 &&
+            global.playerId === global.room.ownerId &&
+            robotArr.length > 0) {
+            this.robotIntervalTask = setInterval(this.mockRobotAI,500, this, robotArr);
+        }
+    }
+
+    mockRobotAI(self, robotArr) {
+        robotArr.forEach(robot => self.mockRobotMove(robot.playerId));
+    }
+
+    mockRobotMove(playerId) {
+        let player = frameSyncPlayerList.players.find(p => p.id === playerId);
+        let res = {
+            x: player.x,
+            y: player.y,
+            rotation: player.rotation,
+            cmd: 0
+        };
+        // 机器人过中线若干步长时，随时可能发生转向
+        switch (player.rotation) {
+            case 0:
+                if(res.y >= 6 + Math.floor(Math.random() * 5)) {
+                    res = this.selectRandomRotation([90,180,-90], res.x, res.y, res.cmd);
+                }
+                else {
+                    res.y++;
+                    res.cmd = FrameSyncCmd.up
+                }
+                break;
+            case 180:
+                if(res.y <= Math.floor(Math.random() * 6)) {
+                    res = this.selectRandomRotation([90,0,-90], res.x, res.y, res.cmd);
+                }
+                else {
+                    res.y--;
+                    res.cmd = FrameSyncCmd.down
+                }
+                break;
+            case 90:
+                if(res.x <= Math.floor(Math.random() * 6)) {
+                    res = this.selectRandomRotation([0,180,-90], res.x, res.y, res.cmd);
+                }
+                else {
+                    res.x--;
+                    res.cmd = FrameSyncCmd.left
+                }
+                break;
+            case -90:
+                if(res.x >= 10 + Math.floor(Math.random() * 10)) {
+                    res = this.selectRandomRotation([90,180,0], res.x, res.y, res.cmd);
+                }
+                else {
+                    res.x++;
+                    res.cmd = FrameSyncCmd.right
+                }
+                break;
+            // no default
+        }
+        // 如果是机器人帧，组装机器人playerId
+        const data: Object = Object.assign(res, {playerId: player.id});
+        let frameData: string = JSON.stringify(data);
+        global.room.sendFrame(frameData);
+    }
+
+    // 选择随机方向转向
+    selectRandomRotation(rArr, x, y, cmd) {
+        let r = rArr[Math.floor(Math.random() * rArr.length)];
+        switch (r) {
+            case 0:
+                y >= 10 ? y = 10 : y++;
+                cmd = FrameSyncCmd.up;
+                break;
+            case 180:
+                y <= 0 ? y = 0 : y--;
+                cmd = FrameSyncCmd.down;
+                break;
+            case 90:
+                x <= 0 ? x = 0 : x--;
+                cmd = FrameSyncCmd.left;
+                break;
+            case -90:
+                x >= 19 ? x = 19 : x++;
+                cmd = FrameSyncCmd.right;
+                break;
+            // no default
+        }
+        return {rotation: r, x, y, cmd};
+    }
+
     // 停止游戏
     stopGame() {
         global.keyOperate = 0;
@@ -142,6 +236,10 @@ export default class Game extends cc.Component {
     // SDK 停止帧同步
     stopFrameSync() {
         global.room.stopFrameSync().then(() => {
+            // 帧同步停止后清理机器人任务
+            if (this.robotIntervalTask) {
+                clearInterval(this.robotIntervalTask);
+            }
             // 停止帧同步成功
             Util.printLog("停止帧同步成功");
             if (!global.isTeamMode) {
@@ -230,6 +328,7 @@ export default class Game extends cc.Component {
             case -90: // 向右
                 x = x + divergeSize;
                 break;
+            // no default
         }
         let cmd: FrameSyncCmd = FrameSyncCmd.fire;
         const data: Object = {
@@ -304,7 +403,6 @@ export default class Game extends cc.Component {
                 circle.active = true;
                 circle.color = cc.color(237,247,7,255);
             }
-
         }
         // 更新子弹
         if(framesId % 10 == 0){
@@ -350,27 +448,35 @@ export default class Game extends cc.Component {
                     x = bullet.x + speed;
                     y = bullet.y;
                     break;
+                // no default
             }
             bullet.x = x;
             bullet.y = y;
         });
 
     }
-
-
-
-
-// ====================SDK广播====================
+    // ====================SDK广播====================
     onRecvFrame(frame: GOBE.ServerFrameMessage | GOBE.ServerFrameMessage[]) {
-        if (frame instanceof Array) {
-            if (frame && frame.length > 0) {
-                Util.printLog("补帧数据开始");
-                frame.forEach((frameData) => {
-                    this.recvFrameHandle(frameData);
-                });
+        // 本次接收帧存入“未处理帧”数组中,只负责接收,不处理数据
+        global.unhandleFrames = global.unhandleFrames.concat(frame);
+    }
+
+    /**
+     * 按游戏帧率处理接收到的帧（每秒60次）
+     */
+    update() {
+        if(global.unhandleFrames.length > 0){
+            if(global.unhandleFrames.length > 1){  // 未处理的帧如果大于1,表示补帧
+                for (let i = 0; i < config.handleFrameRate; i++) {
+                    if(global.unhandleFrames[0]){
+                        this.recvFrameHandle(global.unhandleFrames[0]);
+                        global.unhandleFrames.shift();
+                    }
+                }
+            }else{  // 正常处理
+                this.recvFrameHandle(global.unhandleFrames[0]);
+                global.unhandleFrames.shift();
             }
-        } else {
-            this.recvFrameHandle(frame);
         }
     }
 

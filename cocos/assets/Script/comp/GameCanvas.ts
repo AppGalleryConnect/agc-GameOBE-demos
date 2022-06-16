@@ -22,7 +22,7 @@
  *
  *  2021.12.15-Changed method initPlayersPool
  *  2021.12.15-Changed method setPlayers
- *              Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
+ *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 // Learn TypeScript:

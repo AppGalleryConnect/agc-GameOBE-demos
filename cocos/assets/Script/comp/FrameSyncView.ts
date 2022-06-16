@@ -94,7 +94,6 @@ export default class FrameSyncView extends cc.Component {
         this.gameCanvas.setPlayers(frameSyncPlayerList.players);
         // 绘制小云朵
         this.gameCanvas.setClouds(cloudsList.clouds, dt);
-
         // 绘制子弹
         this.gameCanvas.setBullets(frameSyncBulletList.bullets);
     }
