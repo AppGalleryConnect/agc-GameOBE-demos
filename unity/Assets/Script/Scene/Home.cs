@@ -73,8 +73,6 @@ public class Home : MonoBehaviour
     void InitListener()
     {
         this.Button.onClick.AddListener(() => GoHall());
-        this.GameIdDropDown.onValueChanged.AddListener(delegate { ModifyOtherSetting(GameIdDropDown.value, FairMatchToggle.isOn); });
-        this.FairMatchToggle.onValueChanged.AddListener(delegate { ModifyMatchCode(GameIdDropDown.value, FairMatchToggle.isOn); });
         this.GameIdDropDown.onValueChanged.AddListener(delegate { OnGameIdChanged(0); });
         this.GameIdInput.onValueChanged.AddListener(delegate { OnGameIdChanged(1); });
 
