@@ -191,7 +191,7 @@ export default class AsymmetricRoom extends cc.Component {
         let isPlayerStatus = false;
         if(player.isRobot === 1) {
             this.yellowOneName.fontSize = 10;
-            this.yellowOneName.string = "机器人" + player.playerId;
+            this.yellowOneName.string = player.robotName || `机器人${player.playerId}`;
             this.yellowOneStatus.string = "已准备";
             this.yellowOneUnReadyBtn.active = isPlayerStatus;
             this.yellowOneReadyBtn.active = isPlayerStatus;
@@ -223,7 +223,7 @@ export default class AsymmetricRoom extends cc.Component {
         let isPlayerStatus = false;
         if(player.isRobot === 1) {
             this.redOneName.fontSize = 10;
-            this.redOneName.string = "机器人" + player.playerId;
+            this.redOneName.string = player.robotName || `机器人${player.playerId}`;
             this.redOneStatus.string = "已准备";
             this.redOneUnReadyBtn.active = isPlayerStatus;
             this.redOneReadyBtn.active = isPlayerStatus;
@@ -254,7 +254,7 @@ export default class AsymmetricRoom extends cc.Component {
         let isPlayerStatus = false;
         if(player.isRobot === 1) {
             this.redTwoName.fontSize = 10;
-            this.redTwoName.string = "机器人" + player.playerId;
+            this.redTwoName.string = player.robotName || `机器人${player.playerId}`;
             this.redTwoStatus.string = "已准备";
             this.redTwoUnReadyBtn.active = isPlayerStatus;
             this.redTwoReadyBtn.active = isPlayerStatus;
@@ -286,7 +286,7 @@ export default class AsymmetricRoom extends cc.Component {
         let isPlayerStatus = false;
         if(player.isRobot === 1) {
             this.redThreeName.fontSize = 10;
-            this.redThreeName.string = "机器人" + player.playerId;
+            this.redThreeName.string = player.robotName || `机器人${player.playerId}`;
             this.redThreeStatus.string = "已准备";
             this.redThreeUnReadyBtn.active = isPlayerStatus;
             this.redThreeReadyBtn.active = isPlayerStatus;

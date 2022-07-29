@@ -69,6 +69,7 @@ public class Face : MonoBehaviour
             if (res.RtnCode == 0)
             {
                 Global.Room = null;
+                OnDissRoom();
                 Debug.Log("解散房间success");
             }
             else

@@ -48,13 +48,20 @@ export default class Home extends cc.Component {
         if (Util.isInited()) {
             return Util.printLog("SDK 已经初始化，无需重复操作");
         }
-        const client = new window.GOBE.Client({
+        let clientConfig = {
             appId: configs.gameId,
             openId: configs.openId, // 区别不同用户
             clientId: configs.clientId,
             clientSecret: configs.clientSecret,
             accessToken: this.accessTokenEdit.string,
-        });
+        };
+        if (cc.sys.ANDROID === cc.sys.platform) {
+            clientConfig = Object.assign(clientConfig, {
+                platform: window.GOBE.PlatformType.CC_ANDROID,
+                cerPath: cc.url.raw('resources/endpoint-cert.cer'),
+            })
+        }
+        const client = new window.GOBE.Client(clientConfig);
         Util.printLog("正在初始化 SDK");
         client.init().then(() => {
             // 鉴权成功

@@ -119,6 +119,8 @@ public class RentRoom : MonoBehaviour
         {
             if (res.RtnCode == 0)
             {
+                this.ReLogin();
+                Route.GoHall();
                 Debug.Log("离开房间success");
             }
             else
@@ -206,5 +208,9 @@ public class RentRoom : MonoBehaviour
     {
         GameObject MessageBox = Instantiate(message, prepareOrStartBtn.transform.parent);
         MessageBox.GetComponent<Message>().tip.text = tip;
+    }
+    
+    void ReLogin() { 
+        Global.client.Init(response => {});
     }
 }

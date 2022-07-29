@@ -190,7 +190,7 @@
     "asset": {
       "__uuid__": "5b686236-efb3-4c62-ba4f-f628b8158837"
     },
-    "fileId": "bfro6XOy1Dwqa4sx1jYlvY",
+    "fileId": "040+/rxjJKU7pPDdk6yg9H",
     "sync": false
   },
   {
@@ -297,7 +297,7 @@
     "asset": {
       "__uuid__": "5b686236-efb3-4c62-ba4f-f628b8158837"
     },
-    "fileId": "65Bxq2rqVNupJcD//tPbp3",
+    "fileId": "06R8lwdIZEMIBoslpctCOr",
     "sync": false
   },
   {
@@ -499,7 +499,7 @@
     "asset": {
       "__uuid__": "5b686236-efb3-4c62-ba4f-f628b8158837"
     },
-    "fileId": "46tP+iK19OVq+iAUZKBlxR",
+    "fileId": "89NyQrEyhL7pLTSM6z3bnX",
     "sync": false
   },
   {
@@ -529,7 +529,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 42,
+      "width": 100,
       "height": 17.64
     },
     "_anchorPoint": {
@@ -585,17 +585,17 @@
     "_N$string": "AAAAAAAA",
     "_fontSize": 12,
     "_lineHeight": 14,
-    "_enableWrapText": true,
+    "_enableWrapText": false,
     "_N$file": null,
     "_isSystemFontUsed": true,
     "_spacingX": 0,
     "_batchAsBitmap": false,
-    "_styleFlags": 0,
+    "_styleFlags": 1,
     "_underlineHeight": 0,
     "_N$horizontalAlign": 1,
     "_N$verticalAlign": 1,
     "_N$fontFamily": "PingFangSC-Regular, sans-serif",
-    "_N$overflow": 2,
+    "_N$overflow": 3,
     "_N$cacheMode": 0,
     "_id": ""
   },
@@ -607,7 +607,7 @@
     "asset": {
       "__uuid__": "5b686236-efb3-4c62-ba4f-f628b8158837"
     },
-    "fileId": "c98ykJbjJAppLw6H40blyy",
+    "fileId": "dewBNha/lDN75fpm9YUua+",
     "sync": false
   },
   {
@@ -618,7 +618,7 @@
     "asset": {
       "__uuid__": "5b686236-efb3-4c62-ba4f-f628b8158837"
     },
-    "fileId": "3f1JCNRMxKi6JzjuvR1gYN",
+    "fileId": "18OtJRydBIrq9EtJTuZsbX",
     "sync": false
   },
   {
@@ -637,27 +637,6 @@
     },
     "icon2Sprite": {
       "__id__": 6
-    },
-    "_id": ""
-  },
-  {
-    "__type__": "cc.BoxCollider",
-    "_name": "",
-    "_objFlags": 0,
-    "node": {
-      "__id__": 1
-    },
-    "_enabled": true,
-    "tag": 2,
-    "_offset": {
-      "__type__": "cc.Vec2",
-      "x": 0,
-      "y": 0
-    },
-    "_size": {
-      "__type__": "cc.Size",
-      "width": 40,
-      "height": 40
     },
     "_id": ""
   },

@@ -30,6 +30,7 @@ export interface PlayerData<T> {
     id: string,
     rotation: number,
     playerTeamId: string,
+    robotName: string,
     state?: T,
 }
 

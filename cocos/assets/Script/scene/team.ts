@@ -86,6 +86,7 @@ export default class Team extends cc.Component {
         /* 玩家昵称赋值 */
         let bgRoomCmp = cc.find("Canvas/Main Camera/bg/bg_room");
         const cls: cc.Node[] = bgRoomCmp.children;
+        let playerProperties = "";
         for (let i = 0; i < cls.length; ++i) {
             // 每次得先清空
             let nameNode = cls[i].getChildByName("name");
@@ -95,13 +96,16 @@ export default class Team extends cc.Component {
                 // 默认第一玩家节点就是队长，先赋值
                 let nameNode = cls[i].getChildByName("name");
                 let nameCmp = nameNode.getComponent(cc.Label);
-                nameCmp.string = ownerPlayer.customPlayerProperties;
+
+                playerProperties = JSON.parse(ownerPlayer.customPlayerProperties);
+                nameCmp.string = playerProperties["playerName"];
             } else {
                 // 然后赋值其他玩家
                 for (const player of playerInfos) {
                     let nameNode = cls[i].getChildByName("name");
                     let nameCmp = nameNode.getComponent(cc.Label);
-                    nameCmp.string = player.customPlayerProperties;
+                    playerProperties = JSON.parse(player.customPlayerProperties);
+                    nameCmp.string = playerProperties["playerName"];
                 }
             }
         }
@@ -157,7 +161,9 @@ export default class Team extends cc.Component {
     dismissGroup() {
         Util.printLog(`正在解散队伍`);
         global.client.dismissGroup().then(() => {
-            Util.printLog("解散中...");
+            Util.printLog("解散队伍成功");
+            global.group = null;
+            cc.director.loadScene("hall");
         }).catch((e) => {
             Dialog.open("提示", "解散队伍失败" + Util.errorMessage(e));
         });
@@ -178,7 +184,9 @@ export default class Team extends cc.Component {
     leaveGroup() {
         Util.printLog(`正在退出队伍`);
         global.client.leaveGroup().then(() => {
-            Util.printLog("退出队伍中...");
+            Util.printLog("退出队伍成功");
+            global.group = null;
+            cc.director.loadScene("hall");
         }).catch((e) => {
             Dialog.open("提示", "退出队伍失败" + Util.errorMessage(e));
         });

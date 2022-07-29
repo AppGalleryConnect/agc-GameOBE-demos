@@ -35,11 +35,16 @@ export default class TeamInfo extends cc.Component {
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
 
+    // ”退出“按钮
+    @property(cc.Button)
+    quitBtn: cc.Button = null;
+
     private lockSubmit: boolean = false;
 
     start() {
         // 绑定“加入队伍”按钮
         this.entryTeamBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.joinTeam());
+        this.quitBtn.node.on(cc.Node.EventType.TOUCH_END, () => cc.director.loadScene("hall"));
         this.initDialog();
     }
 
@@ -56,11 +61,16 @@ export default class TeamInfo extends cc.Component {
         }
         this.lockSubmit = true;
         Util.printLog(`正在加入队伍，队伍CODE：${groupId}`);
+
+        let data = {
+            playerName: global.playerName
+        };
+
         await global.client.joinGroup(
             groupId,
             {
                 customPlayerStatus: 0,
-                customPlayerProperties: global.playerName,
+                customPlayerProperties: JSON.stringify(data),
             },
         ).then((group) => {
             Util.printLog("加入队伍成功");

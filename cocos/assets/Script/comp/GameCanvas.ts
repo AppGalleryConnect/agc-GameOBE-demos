@@ -174,7 +174,7 @@ export default class GameCanvas extends cc.Component {
                 const playerView = this.players[i].getComponent(Player);
                 const {x, y} = this.convertPosition(playerData.x, playerData.y);
                 playerView.node.parent = this.node;
-                playerView.initPlayer(playerData.id, playerData.rotation, x, y, playerData.playerTeamId);
+                playerView.initPlayer(playerData.id, playerData.rotation, x, y, playerData.playerTeamId, playerData.robotName);
             }
         });
     }

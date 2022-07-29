@@ -16,7 +16,7 @@
 
 import global from "../../global";
 import * as Util from "../../util";
-import {PlayerInfo} from "../../GOBE/GOBE";
+import {PlayerInfo, UpdateCustomStatusResponse, UpdateCustomPropertiesResponse, RoomInfo} from "../../GOBE/GOBE";
 import Dialog from "../comp/Dialog";
 
 const {ccclass, property} = cc._decorator;
@@ -67,6 +67,15 @@ export default class Room extends cc.Component {
     @property(cc.Node)
     kickPersonBtn: cc.Node = null;
 
+    @property(cc.Node)
+    sendBtn: cc.Node = null;
+
+    @property(cc.EditBox)
+    chatBox: cc.EditBox = null;
+
+    @property(cc.Label)
+    chatContent: cc.Label = null;
+
     start() {
         this.initView();
         this.initListener();
@@ -95,12 +104,78 @@ export default class Room extends cc.Component {
         //绑定“解散房间”事件
         this.enableDismissBtn.on(cc.Node.EventType.TOUCH_START, () => this.dismissRoom());
 
+        this.sendBtn.on(cc.Node.EventType.TOUCH_START, () => this.sendContent());
+
         global.room.onJoin(() => this.onJoining())
         global.room.onLeave((playerInfo) => this.onLeaving(playerInfo))
         global.room.onDismiss(() => this.onDismiss());
 
+        global.room.onUpdateCustomStatus((playerInfo: UpdateCustomStatusResponse) => this.onUpdateCustomStatus(playerInfo))
+        global.room.onUpdateCustomProperties((playerInfo: UpdateCustomPropertiesResponse) => this.onUpdateCustomProperties(playerInfo))
+        global.room.onRoomPropertiesChange((roomInfo: RoomInfo) => this.onRoomPropertiesChange(roomInfo))
+
+        global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
+
         // SDK 开始帧同步
         global.room.onStartFrameSync(() => this.onStartFrameSync())
+    }
+
+    // 修改自定义状态回调
+    onUpdateCustomStatus(playerInfo: UpdateCustomStatusResponse) {
+        console.log('玩家 ' + playerInfo.playerId + ' 修改状态为 ' + playerInfo.customStatus);
+        let enable = playerInfo.customStatus === 1;
+        if(playerInfo.playerId === global.playerId){
+            this.enableReadyBtn.active = !enable;
+            this.cancelReadyBtn.active = enable;
+            this.enableLeaveBtn.active = !enable;
+            this.disableLeaveBtn.active = enable;
+        } else {
+            this.enableStartGameBtn.active = enable;
+            this.disableStartGameBtn.active = !enable;
+        }
+        this.player_ready_status.string = enable ? "已准备" : "未准备";
+    }
+
+    // 修改自定义属性回调
+    onUpdateCustomProperties(playerInfo: UpdateCustomPropertiesResponse) {
+        let name = "自己 : ";
+        if(playerInfo.playerId !== global.playerId){
+            name = "对手 : "
+        }
+        this.chatContent.string += '\n' + name + playerInfo.customProperties;
+    }
+
+    //发送聊天内容
+    sendContent() {
+        global.player.updateCustomProperties(this.chatBox.string)
+            .then(() => {
+                this.chatBox.string = '';
+                Util.printLog('发送消息成功');
+            })
+            .catch((e) => {
+                Dialog.open('发送消息失败','err: ' + Util.errorMessage(e));
+            });
+    }
+
+    // 修改房间属性回调
+    onRoomPropertiesChange(roomInfo: RoomInfo) {
+        // TODO拿到roomInfo重置本地数据，刷新页面
+        console.log('onRoomPropertiesChange ' + JSON.stringify(roomInfo));
+    }
+
+    // 修改房间属性
+    changeRoomProperties() {
+        global.room.updateRoomProperties({
+            isPrivate: 1,
+            roomName: 'abc',
+            customRoomProperties:'哈哈哈哈',
+        })
+            .then(() => {
+                Util.printLog('发送消息成功');
+            })
+            .catch((e) => {
+                Dialog.open('发送消息失败','err: ' + Util.errorMessage(e));
+            });
     }
 
     // 准备
@@ -226,6 +301,8 @@ export default class Room extends cc.Component {
         global.client.leaveRoom().then((client) => {
             // 退出房间成功
             Util.printLog("退出房间成功");
+            this.relogin();
+            cc.director.loadScene("hall");
         }).catch((e) => {
             // 退出房间失败
             Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
@@ -240,6 +317,8 @@ export default class Room extends cc.Component {
         global.client.dismissRoom().then((client) => {
             // 退出房间成功
             Util.printLog("解散房间成功");
+            this.relogin();
+            cc.director.loadScene("hall");
         }).catch((e) => {
             // 退出房间失败
             Dialog.open("提示", "解散房间失败" + Util.errorMessage(e));
@@ -322,6 +401,38 @@ export default class Room extends cc.Component {
         cc.director.loadScene("game");
     }
 
+    onDisconnect(playerInfo: PlayerInfo) {
+        if (playerInfo.playerId === global.playerId) {
+            Util.printLog("玩家掉线");
+            this.reConnect();
+        } else {
+            Util.printLog("房间内其他玩家掉线，playerId:"+playerInfo.playerId);
+        }
+    }
+
+    // 房间内重连
+    reConnect() {
+        if (global.isTeamMode) {
+            cc.director.loadScene("hall");
+        } else {
+            // 没有超过重连时间，就进行重连操作
+            global.room.reconnect().then(() => {
+                Util.printLog("玩家重连成功");
+            }).catch((error) => {
+                if (!error.code) {
+                    // 加入房间请求不通就继续重连
+                    this.reConnect();
+                    return;
+                }
+                if (error.code !== 0) {
+                    // 无法加入房间需要退出到大厅
+                    this.relogin();
+                    cc.director.loadScene("hall");
+                }
+            });
+        }
+    }
+    
     relogin() {
         global.client.init();
     }

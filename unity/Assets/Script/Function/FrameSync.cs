@@ -240,16 +240,17 @@ public class FrameSync {
         player.playerTeamId = playerTeamId;
         //存入机器人信息
         player.isRobot = playerInfo.IsRobot;
+        player.robotName = playerInfo.RobotName;
         // 初始化用户状态信息
         Player PlayerExtData = new Player();
         PlayerExtData.cmd = cmd;
         player.state = PlayerExtData;
         // 将用户存入本地内存
-        frameSyncPlayerList.Add(SetPlayer(x,y,playerInfo.PlayerId,player.isRobot,rotation,cmd,playerTeamId));
+        frameSyncPlayerList.Add(SetPlayer(x,y,playerInfo.PlayerId,player.isRobot,player.robotName,rotation,cmd,playerTeamId));
         frameSyncPlayerInitList.Add(player);
     }
 
-    static PlayerList<Player>.PlayerData<Player> SetPlayer(int x, int y, string playerId,int isRobot, int rotation, FrameSyncCmd cmd, string playerTeamId)
+    static PlayerList<Player>.PlayerData<Player> SetPlayer(int x, int y, string playerId,int isRobot, string robotName, int rotation, FrameSyncCmd cmd, string playerTeamId)
     {
         PlayerList<Player>.PlayerData<Player> player = new PlayerList<Player>.PlayerData<Player>();
         foreach (PlayerList<Player>.PlayerData<Player> playerInfo in frameSyncPlayerList) {
@@ -264,6 +265,7 @@ public class FrameSync {
         player.rotation = rotation;
         player.playerTeamId = playerTeamId;
         player.isRobot = isRobot;
+        player.robotName = robotName;
         // 初始化用户状态信息
         Player PlayerExtData = new Player();
         PlayerExtData.cmd = cmd;

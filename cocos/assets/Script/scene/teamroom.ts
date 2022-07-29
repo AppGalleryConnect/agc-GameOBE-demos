@@ -160,7 +160,7 @@ export default class TeamRoom extends cc.Component {
         let playerName = '';
 
         if(player.isRobot === 1) {
-            playerName = '机器人' + player.playerId;
+            playerName = player.robotName || `机器人${player.playerId}`;
             switch (playerNo) {
                 case 1:
                     this.playerOneName.fontSize = 10;
@@ -207,7 +207,7 @@ export default class TeamRoom extends cc.Component {
         if(player.isRobot === 1) {
             this.playerTwoName.fontSize = 10;
             this.playerTwoStatus.string = "已准备";
-            this.playerTwoName.string = "机器人" + player.playerId;
+            this.playerTwoName.string = player.robotName || `机器人${player.playerId}`;
             this.unReadyTwoBtn.active = false;
             this.readyTwoBtn.active = false;
         } else {

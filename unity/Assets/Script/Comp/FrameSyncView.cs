@@ -485,10 +485,6 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                 UnityMainThread.wkr.AddJob(Route.GoTeam);
             } else {
                 // 在线匹配或者组房模式
-                if (Global.isOnlineMatch) {
-                    // 在线匹配
-                    Global.isOnlineMatch = false;
-                }
                 UnityMainThread.wkr.AddJob(Route.GoHall);
             }
         }

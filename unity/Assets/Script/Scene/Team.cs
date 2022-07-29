@@ -208,6 +208,8 @@ public class Team : MonoBehaviour
         };
         Global.client.DismissGroup(dismissGroupConfig, response => {
             if (response.RtnCode == 0) {
+                Global.group = null;
+                Route.GoHall();
                 Debug.Log("解散队伍成功");
             }
             else {
@@ -229,6 +231,7 @@ public class Team : MonoBehaviour
         Global.client.LeaveGroup(dismissGroupConfig, response => {
             if (response.RtnCode == 0) {
                 Debug.Log("正在退出队伍");
+                Route.GoHall();
             } else {
                 Dialog dia = Instantiate(Dailog);
                 dia.Open("提示", "退出队伍失败" + Util.ErrorMessage(response));

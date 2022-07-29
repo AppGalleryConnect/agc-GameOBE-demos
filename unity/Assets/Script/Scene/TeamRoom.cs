@@ -141,7 +141,7 @@ public class TeamRoom : MonoBehaviour
                 {
                     player.CustomPlayerStatus = 1;
                     player.Status = 1;
-                    player.CustomPlayerProperties = Util._robotPrefix + player.PlayerId;
+                    player.CustomPlayerProperties = player.RobotName;
                 }
 
                 // 渲染在线玩家

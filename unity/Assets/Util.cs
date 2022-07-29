@@ -142,11 +142,11 @@ public class Util {
        return result;
     }
 
-    public static String MockRobotNameJson(string playerId)
+    public static String MockRobotNameJson(string robotName)
     {
         AckData ackData = new AckData
         {
-            PlayerName = _robotPrefix+playerId,
+            PlayerName = robotName,
         };
         return JsonConvert.SerializeObject(ackData);
     }

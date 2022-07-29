@@ -19,7 +19,6 @@ import * as Util from "../../util";
 import Dialog from "../comp/Dialog";
 import Reloading from "../comp/Reloading";
 import config from "../../config";
-import {MatchPlayerInfoParam, MatchTeamInfoParam} from "../../GOBE/GOBE";
 
 const {ccclass, property} = cc._decorator;
 
@@ -110,6 +109,9 @@ export default class Hall extends cc.Component {
      * 组队匹配（创建队伍）
      */
     teamMatch() {
+        let data = {
+            playerName: global.playerName
+        };
         global.client.createGroup({
             maxPlayers: 2,
             groupName: "快乐小黑店",
@@ -118,7 +120,7 @@ export default class Hall extends cc.Component {
             isPersistent: 0,    // 是否持久化 0:不持久化 1:持久化 默认0
         }, {
             customPlayerStatus: 0,
-            customPlayerProperties: global.playerName,
+            customPlayerProperties: JSON.stringify(data),
         }).then((group) => {
             Util.printLog("队伍创建成功");
             global.group = group;

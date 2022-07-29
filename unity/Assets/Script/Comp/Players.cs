@@ -32,7 +32,7 @@ public class Players : MonoBehaviour {
     public string playerId;
 
     // 初始化玩家/红队/黄队的位置和方向
-    public void InitPlayer(string id, int rotation, int x, int y, string playerTeamId)
+    public void InitPlayer(string id, int rotation, int isRobot, string robotName,int x, int y, string playerTeamId)
     {
         this.playerId = id;
         if ((playerTeamId == null && id == Global.playerId) || (playerTeamId !=null && GameTeam.red.ToString().Equals(playerTeamId) )) {
@@ -49,7 +49,17 @@ public class Players : MonoBehaviour {
         if (id == Global.playerId) {
             id = "我";
         }
-        this.label.text = id;
+
+        if (isRobot == 1)
+        {
+            this.label.text = robotName;
+        }
+        else
+        {
+            this.label.text = id;
+        }
+
+
         this.gameObject.transform.position = new Vector3(x, y, 0);
     }
     

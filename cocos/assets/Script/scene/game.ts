@@ -118,7 +118,7 @@ export default class Game extends cc.Component {
     initListener() {
         // 监听房间
         if (global.room) {
-            global.room.onRecvFrame((frame: GOBE.ServerFrameMessage) => {
+            global.room.onRecvFrame((frame: GOBE.RecvFrameMessage | GOBE.RecvFrameMessage[]) => {
                 this.onRecvFrame(frame);
             });
             global.room.onStopFrameSync(() => this.onStopFrameSync());
@@ -392,7 +392,7 @@ export default class Game extends cc.Component {
      * @param frame
      * @private
      */
-    private recvFrameHandle(frame: GOBE.ServerFrameMessage) {
+    private recvFrameHandle(frame: GOBE.RecvFrameMessage) {
         framesId = frame.currentRoomFrameId;
         if(framesId % 150 == 0){
             //显示圆圈，持续5秒后消失
@@ -456,7 +456,7 @@ export default class Game extends cc.Component {
 
     }
     // ====================SDK广播====================
-    onRecvFrame(frame: GOBE.ServerFrameMessage | GOBE.ServerFrameMessage[]) {
+    onRecvFrame(frame: GOBE.RecvFrameMessage | GOBE.RecvFrameMessage[]) {
         // 本次接收帧存入“未处理帧”数组中,只负责接收,不处理数据
         global.unhandleFrames = global.unhandleFrames.concat(frame);
     }
@@ -483,6 +483,9 @@ export default class Game extends cc.Component {
     onStopFrameSync() {
         Util.printLog("SDK广播--停止帧同步");
         this.unready();
+        // 清空帧数据
+        global.unhandleFrames = [];
+        frameSyncBulletList.bullets = [];
         if (!global.isTeamMode) {
             this.reopenGame();
         } else {

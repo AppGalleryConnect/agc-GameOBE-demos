@@ -129,7 +129,7 @@ export function reCalcFrameState() {
     });
 }
 
-function initPlayer(x: number, y: number, playerId: string, rotation: number, cmd: FrameSyncCmd, playerTeamId: string) {
+function initPlayer(x: number, y: number, playerId: string, rotation: number, cmd: FrameSyncCmd, playerTeamId: string, robotName?: string) {
     const player: PlayerData<Player> = {
         x: x, y: y, id: playerId, rotation: rotation, playerTeamId: playerTeamId,
         state: {
@@ -137,6 +137,7 @@ function initPlayer(x: number, y: number, playerId: string, rotation: number, cm
             dir: 1,
             lastUpdateFrameId: 1
         },
+        robotName,
     };
     frameSyncPlayerList.players.push(player);
     frameSyncPlayerInitList.players.push(player);
@@ -147,10 +148,10 @@ function roomMatch(redTeamId: any, roomInfo) {
     roomInfo.players.forEach((p, i) => {
         if (roomInfo.ownerId != p.playerId) {
             // 如果不是房主
-            initPlayer(19, 0, p.playerId, 90, FrameSyncCmd.left, null);
+            initPlayer(19, 0, p.playerId, 90, FrameSyncCmd.left, null, p.robotName);
         } else {
             // 如果是房主
-            initPlayer(0, 10, roomInfo.ownerId, -90, FrameSyncCmd.right, null);
+            initPlayer(0, 10, roomInfo.ownerId, -90, FrameSyncCmd.right, null, p.robotName);
         }
     });
 }
@@ -162,11 +163,11 @@ function teamMatch(redTeamId: any, roomInfo) {
     roomInfo.players.forEach((p, i) => {
         if (redTeamId === p.teamId) {
             // 红队
-            initPlayer(0, redYCoordinates, p.playerId, -90, FrameSyncCmd.right, Team.red);
+            initPlayer(0, redYCoordinates, p.playerId, -90, FrameSyncCmd.right, Team.red, p.robotName);
             redYCoordinates--;
         } else {
             // 黄队
-            initPlayer(19, yellowYCoordinates, p.playerId, 90, FrameSyncCmd.left, Team.yellow);
+            initPlayer(19, yellowYCoordinates, p.playerId, 90, FrameSyncCmd.left, Team.yellow, p.robotName);
             yellowYCoordinates++;
         }
     });

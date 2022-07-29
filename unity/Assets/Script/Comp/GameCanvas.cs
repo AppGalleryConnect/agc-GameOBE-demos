@@ -102,7 +102,7 @@ public class GameCanvas : MonoBehaviour {
         for (int index = 0; index < players.Count; index++) {
             PlayerData<FrameSync.Player> player = players[index];
             Players playerView = playersPool[index].GetComponent<Players>();
-            playerView.InitPlayer(player.id, player.rotation, player.x, player.y, player.playerTeamId);
+            playerView.InitPlayer(player.id, player.rotation, player.isRobot,player.robotName,player.x, player.y, player.playerTeamId);
         }
 
     }

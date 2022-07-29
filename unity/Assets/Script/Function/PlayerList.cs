@@ -30,6 +30,7 @@ public class PlayerList<T> {
         public string playerTeamId { get; set; }
         public T state { get; set; }
         public int isRobot { get; set; }
+        public string robotName { get; set; }
     }
 
     public List<PlayerData<T>> Players = new List<PlayerData<T>>(); 

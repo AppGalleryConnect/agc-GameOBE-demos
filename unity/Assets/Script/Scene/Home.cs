@@ -22,6 +22,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 using Com.Huawei.Game.Gobes.Config;
+using Com.Huawei.Game.Gobes.SDKLog;
 using Com.Huawei.Game.Gobes.Utils;
 using TMPro;
 using NLog;
@@ -43,6 +44,7 @@ public class Home : MonoBehaviour
     public Toggle FairMatchToggle;
     public Boolean isPass = false;
     public InputField handleFrameRateInput;
+    public Text EnvName;
     // Start is called before the first frame update
     void Start()
     {
@@ -104,7 +106,9 @@ public class Home : MonoBehaviour
         RtsaConfig.CaFilePath = Application.persistentDataPath + "/rtsa-config/012-DigiCert-Global-Root-CA.cer";
         RtsaConfig.GrsRootPath = Application.persistentDataPath + "/rtsa-config/cert/nk-grs";
         RtsaConfig.LogPath = Application.persistentDataPath + "/" + RtsaConfig.LogPath;
-
+        SDKLogConfig.SDKLogLevel = "Debug";
+        SDKLog.InitSDKLog(LogLevel.FromString(SDKLogConfig.SDKLogLevel));
+        RtsaConfig.LogLevel = 3;
         ClientConfig clientConfig = new ClientConfig()
         {
             //页面取值

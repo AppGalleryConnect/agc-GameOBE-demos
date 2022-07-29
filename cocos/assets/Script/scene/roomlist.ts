@@ -36,6 +36,9 @@ export default class RoomList extends cc.Component {
     @property(cc.Button)
     entryRoomByCodeBtn: cc.Button = null;
 
+    @property(cc.Button)
+    quitBtn: cc.Button = null;
+
     @property(cc.EditBox)
     entryRoomByCodeEdit: cc.EditBox = null;
 
@@ -67,6 +70,7 @@ export default class RoomList extends cc.Component {
     initListener() {
         this.entryRoomBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.joinRoom());
         this.entryRoomByCodeBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.joinRoom());
+        this.quitBtn.node.on(cc.Node.EventType.TOUCH_END, () => cc.director.loadScene("hall"));
     }
 
     async joinRoom() {

@@ -30,13 +30,9 @@ export function mockOpenId() {
     return str;
 }
 
-let i = 0;
-let arr=[1,11,12,13] // 1~10 表示1人队的一方 ， 11~20 表示3人队的一方
-
-export function mockAck() {
-    let str = arr[i];
-    i = i+1;
-    return str;
+// 在非对称匹配规则下，队伍编号值为1的表示1人队的一方 ， 队伍编号值为11的表示3人队的一方
+export function mockTeamNumber() {
+    return Math.random() < 0.5 ? 1 : 11;
 }
 
 export function getPlayerMatchParams() {
@@ -45,13 +41,12 @@ export function getPlayerMatchParams() {
     } else {
         return {'level': 2};
     }
-
 }
 
 export function getTeamMatchParams() {
     if (config.asymmetric) {
         return {
-            matchParams : { "teamNumber" : mockAck()}
+            matchParams : { "teamNumber" : mockTeamNumber()}
         };
     } else {
         return null;

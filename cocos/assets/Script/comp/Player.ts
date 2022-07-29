@@ -57,7 +57,7 @@ export default class Player extends cc.Component {
     // 组件需要记录玩家id，后面有用
     playerId: string;
 
-    public initPlayer(id: string, rotation: number, x = 0, y = 0, playerTeamId: string) {
+    public initPlayer(id: string, rotation: number, x = 0, y = 0, playerTeamId: string, robotName?: string) {
 
         this.playerId = id;
 
@@ -73,6 +73,9 @@ export default class Player extends cc.Component {
         }
         if (id === global.playerId) {
             id = "我";
+        }
+        if (robotName) {
+            id = robotName;
         }
         this.label.string = id;
         this.node.x = x;

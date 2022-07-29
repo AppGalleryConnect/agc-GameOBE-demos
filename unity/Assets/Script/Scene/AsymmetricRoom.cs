@@ -134,7 +134,7 @@ public class AsymmetricRoom : MonoBehaviour
             if (playerInfos[i].IsRobot == 1)
             {
                 playerInfos[i].CustomPlayerStatus = 1;
-                playerInfos[i].CustomPlayerProperties = Util.MockRobotNameJson(playerInfos[i].PlayerId);
+                playerInfos[i].CustomPlayerProperties = Util.MockRobotNameJson(playerInfos[i].RobotName);
             }
 
             if (playerInfos[i].PlayerId == roomInfo.OwnerId)
