@@ -18,8 +18,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
-using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -79,6 +79,9 @@ public class AsymmetricRoom : MonoBehaviour
         InitListener();
         // 由于玩家切换准备状态无法感知，故通过轮询来
         InvokeRepeating("InitRoomView", 0f, interval);
+        if(Global.Room.roomInfo.RoomStatus ==(int)RoomStatus.SYNCING ) {
+            OnStartFrameSync();
+        }
     }
 
     // Update is called once per frame
@@ -110,6 +113,7 @@ public class AsymmetricRoom : MonoBehaviour
     private void InitRoomView() {
         if (Global.room != null)
         {
+            Util.SaveRoomType(FrameSync.RoomType.ASYCROOM);
             Global.room.Update(response =>
             {
                 if (response.RtnCode == 0)
@@ -143,7 +147,7 @@ public class AsymmetricRoom : MonoBehaviour
                 ownerTeamId = playerInfos[i].TeamId;
                 // 房主在红队还是黄队
                 string ownerProperties = playerInfos[i].CustomPlayerProperties;
-                AckData ackData = JsonConvert.DeserializeObject<AckData>(ownerProperties);
+                AckData ackData = CommonUtils.JsonDeserializer<AckData>(ownerProperties);
                 int ack = int.Parse(ackData.TeamNumber);
                 if (0 < ack && ack < 11)
                 {
@@ -207,7 +211,7 @@ public class AsymmetricRoom : MonoBehaviour
     //渲染红队玩家
     private int DrawRedPlayer(PlayerInfo player,int  allReadyCount, int playerNumber)
     {
-        AckData customPlayerProperties = JsonConvert.DeserializeObject<AckData>(player.CustomPlayerProperties);
+        AckData customPlayerProperties = CommonUtils.JsonDeserializer<AckData>(player.CustomPlayerProperties);
         Boolean isPlayerStatus = player.CustomPlayerStatus == 1 ? true : false;
         switch (playerNumber) {
             case 1:
@@ -282,7 +286,7 @@ public class AsymmetricRoom : MonoBehaviour
     }
     //渲染黄队玩家
     private int DrawYellowPlayer(PlayerInfo player, int allReadyCount) {
-        AckData customPlayerProperties = JsonConvert.DeserializeObject<AckData>(player.CustomPlayerProperties);
+        AckData customPlayerProperties = CommonUtils.JsonDeserializer<AckData>(player.CustomPlayerProperties);
         Boolean isPlayerStatus = player.CustomPlayerStatus == 1 ? true : false;
         if (player.IsRobot==1)
         {

@@ -89,20 +89,16 @@ export default class roominfo extends cc.Component {
                     'matchRule2': global.matchRule,
                 }
             },
-            {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
+            {customPlayerStatus: 0, customPlayerProperties: "111"}).then((room) => {
             // 创建房间成功
             Util.printLog("创建房间成功");
             global.room = room;
             global.player = room.player;
-            this.loadRoomScene();
+            cc.director.loadScene("room");
         }).catch((e) => {
             // 创建房间失败
             Dialog.open("提示", "创建房间失败" + Util.errorMessage(e));
         });
-    }
-
-    loadRoomScene() {
-        cc.director.loadScene("room");
     }
 
     onDisable() {

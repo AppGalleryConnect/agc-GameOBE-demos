@@ -15,6 +15,7 @@
  */
 import global from "../../global";
 import {CollideTagEnum, FrameSyncCmd} from "../function/FrameSync";
+import * as Util from "../../util";
 
 const {ccclass, property} = cc._decorator;
 /**
@@ -43,7 +44,12 @@ export default class Circle extends cc.Component {
                 cmd, otherTag, selfTag
             };
             let frameData: string = JSON.stringify(data);
-            global.room.sendFrame(frameData);
+            try{
+                global.room.sendFrame(frameData);
+            }
+            catch (e) {
+                Util.printLog('Circle onCollisionEnter sendFrame err: ' + e);
+            }
         }
     }
 

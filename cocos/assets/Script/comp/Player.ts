@@ -35,9 +35,8 @@
 //  - [English] http://www.cocos2d-x.org/docs/creator/manual/en/scripting/life-cycle-callbacks.html
 
 import global from "../../global";
-import {frameSyncPlayerList, frameSyncPlayerInitList, Team, CollideTagEnum, FrameSyncCmd} from "../function/FrameSync";
-import {PlayerInfo} from "../../GOBE/GOBE";
-import {PlayerData} from "../function/PlayerList";
+import {Team, CollideTagEnum, FrameSyncCmd} from "../function/FrameSync";
+import * as Util from "../../util";
 
 const {ccclass, property} = cc._decorator;
 
@@ -93,9 +92,12 @@ export default class Player extends cc.Component {
                 cmd, otherTag, selfTag, playerId
             };
             let frameData: string = JSON.stringify(data);
-            global.room.sendFrame(frameData);
+            try{
+                global.room.sendFrame(frameData);
+            }
+            catch (e) {
+                Util.printLog('Player onCollisionEnter sendFrame err: ' + e);
+            }
         }
     }
-
-
 }

@@ -14,12 +14,11 @@
  *  limitations under the License.
  */
 
-using System.Collections;
-using System.Collections.Generic;
-using Newtonsoft.Json;
+using Com.Huawei.Game.Gobes.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 using static FrameSync;
+using static PlayerList<FrameSync.Player>;
 
 public class Players : MonoBehaviour {
 
@@ -32,27 +31,26 @@ public class Players : MonoBehaviour {
     public string playerId;
 
     // 初始化玩家/红队/黄队的位置和方向
-    public void InitPlayer(string id, int rotation, int isRobot, string robotName,int x, int y, string playerTeamId)
+    public void InitPlayer(PlayerData<FrameSync.Player> player , string id)
     {
         this.playerId = id;
-        if ((playerTeamId == null && id == Global.playerId) || (playerTeamId !=null && GameTeam.red.ToString().Equals(playerTeamId) )) {
+        if ((player.playerTeamId == null && id == Global.playerId) || (player.playerTeamId !=null && GameTeam.red.ToString().Equals(player.playerTeamId) )) {
             this.icon1Sprite.SetActive(true);
-            
             this.icon2Sprite.SetActive(false);
-            this.icon1Sprite.transform.eulerAngles = new Vector3(0, 0, rotation);
+            this.icon1Sprite.transform.eulerAngles = new Vector3(0, 0, player.rotation);
         }
-        if ((playerTeamId == null && id != Global.playerId) || (playerTeamId != null && GameTeam.yellow.ToString().Equals(playerTeamId))) {
+        if ((player.playerTeamId == null && id != Global.playerId) || (player.playerTeamId != null && GameTeam.yellow.ToString().Equals(player.playerTeamId))) {
             this.icon1Sprite.SetActive(false);
             this.icon2Sprite.SetActive(true);
-            this.icon2Sprite.transform.eulerAngles = new Vector3(0, 0, rotation);
+            this.icon2Sprite.transform.eulerAngles = new Vector3(0, 0, player.rotation);
         }
         if (id == Global.playerId) {
             id = "我";
         }
 
-        if (isRobot == 1)
+        if (player.isRobot == 1)
         {
-            this.label.text = robotName;
+            this.label.text = player.robotName;
         }
         else
         {
@@ -60,7 +58,7 @@ public class Players : MonoBehaviour {
         }
 
 
-        this.gameObject.transform.position = new Vector3(x, y, 0);
+        this.gameObject.transform.position = new Vector3(player.x, player.y, 0);
     }
     
     /**
@@ -80,7 +78,7 @@ public class Players : MonoBehaviour {
             collisionFrameData.selfTag = FrameSync.PlayerTag;//碰撞体标签
             collisionFrameData.playerId = playerId;
             
-            string frameData = JsonConvert.SerializeObject(collisionFrameData);
+            string frameData = CommonUtils.JsonSerializer(collisionFrameData);
             // 调用SDK发送帧数据
             string[] frameDatas = new string[] { frameData };
             Global.Room.SendFrame(frameDatas, response => {});

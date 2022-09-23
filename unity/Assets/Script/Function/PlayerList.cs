@@ -14,22 +14,29 @@
  *  limitations under the License.
  */
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using Com.Huawei.Game.Gobes.Model;
 
 public class PlayerList<T> {
 
+    [DataContract]
     public class PlayerData<T>
     {
+        [DataMember]
         public int x { get; set; }
+        [DataMember]
         public int y { get; set; }
+        [DataMember]
         public string id { get; set; }
+        [DataMember]
         public int rotation { get; set; }
+        [DataMember]
         public string playerTeamId { get; set; }
+        [DataMember]
         public T state { get; set; }
+        [DataMember]
         public int isRobot { get; set; }
+        [DataMember]
         public string robotName { get; set; }
     }
 

@@ -20,7 +20,6 @@ using UnityEngine.SceneManagement;
 using Com.Huawei.Game.Gobes;
 using Com.Huawei.Game.Gobes.Group;
 using Com.Huawei.Game.Gobes.Utils;
-using Newtonsoft.Json;
 
 public class TeamInfo : MonoBehaviour
 {
@@ -48,7 +47,7 @@ public class TeamInfo : MonoBehaviour
             CustomPlayerStatus = "0",
             CustomPlayerProperties = Global.playerName
         };
-        Debug.Log(JsonConvert.SerializeObject(joinGroupConfig));
+        Debug.Log(CommonUtils.JsonSerializer(joinGroupConfig));
         try {
             Global.client.JoinGroup(joinGroupConfig, response =>
             {

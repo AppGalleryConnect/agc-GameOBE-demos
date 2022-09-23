@@ -243,8 +243,12 @@ export default class Team extends cc.Component {
     /**
      * 取消快速匹配
      */
-    cancelTeamMatch() {
-        global.client.cancelMatch();
+     cancelTeamMatch() {
+        global.client.cancelMatch().then((res) => {
+            Util.printLog('取消匹配成功');
+        }).catch((err) => {
+            Util.printLog('取消匹配失败');
+        })
     }
 
     /**
@@ -256,8 +260,7 @@ export default class Team extends cc.Component {
         if (!this.isOwner && serverEvent.eventType === 1) {
             // 如果不是队长就弹出匹配中
             Reloading.open("队员匹配中。。。", false);
-            let players = global.group.players;
-            this.teamMatchGroup(players);
+            global.client.matchQuery();
         }
     }
 
@@ -277,15 +280,13 @@ export default class Team extends cc.Component {
             playerName
         };
         let customPlayerProperties: string = JSON.stringify(data);
+        // 调用GOBE的matchGroup方法发起组队匹配
         global.client.matchGroup({
                 playerInfos: playerInfos,
                 matchCode: config.matchCode
             },
-            {customPlayerStatus: 0, customPlayerProperties: customPlayerProperties}).then((room) => {
-            Util.printLog('队员匹配成功:' + room);
-            global.room = room;
-            cc.director.loadScene("teamroom");
-            Reloading.close();
+            {customPlayerStatus: 0, customPlayerProperties: customPlayerProperties}).then((res) => {
+            Util.printLog('组队匹配开始');
         }).catch((e) => {
             Util.printLog('队员匹配失败:' + Util.errorMessage(e));
             Reloading.close();

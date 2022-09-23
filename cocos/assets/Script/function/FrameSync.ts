@@ -101,27 +101,6 @@ export function pushFrames(frame: GOBE.ServerFrameMessage) {
     frames.push(frame);
 }
 
-export function requestFrame(framesId: number) {
-    let beginFrameId = frames.length === 0 ? 0 : frames[frames.length - 1].currentRoomFrameId;
-    let requestFrameSize = framesId - beginFrameId;
-    // 如果请求超过1000帧，就每1000帧去补帧
-    if (requestFrameSize > 1000) {
-        let count = Math.floor(requestFrameSize / 1000);
-        for (let i = 0; i < count; i++) {
-            cc.log("补帧beginFrameId:" + beginFrameId + ",1000");
-            global.room.requestFrame(beginFrameId, 1000);
-            beginFrameId = beginFrameId + 1000;
-        }
-        if (framesId - beginFrameId > 0) {
-            cc.log("补尾部的帧beginFrameId:" + beginFrameId + "," + (framesId - beginFrameId));
-            global.room.requestFrame(beginFrameId, framesId - beginFrameId);
-        }
-    } else {
-        cc.log("请求补帧beginFrameId:" + beginFrameId + "," + "requestFrameSize:" + requestFrameSize);
-        global.room.requestFrame(beginFrameId, requestFrameSize);
-    }
-}
-
 export function reCalcFrameState() {
     setDefaultFrameState();
     frames.forEach(frame => {
@@ -143,15 +122,39 @@ function initPlayer(x: number, y: number, playerId: string, rotation: number, cm
     frameSyncPlayerInitList.players.push(player);
 }
 
-function roomMatch(redTeamId: any, roomInfo) {
-    // 房间匹配
-    roomInfo.players.forEach((p, i) => {
-        if (roomInfo.ownerId != p.playerId) {
+export function resetFrameSyncPlayerList() {
+    frameSyncPlayerList.players = [];
+    frameSyncPlayerInitList.players = [];
+    global.room.players.forEach(player => {
+        if (global.room.ownerId !== player.playerId) {
             // 如果不是房主
-            initPlayer(19, 0, p.playerId, 90, FrameSyncCmd.left, null, p.robotName);
+            initPlayer(19, 0, player.playerId, 90, FrameSyncCmd.left, null, player.robotName);
         } else {
             // 如果是房主
-            initPlayer(0, 10, roomInfo.ownerId, -90, FrameSyncCmd.right, null, p.robotName);
+            initPlayer(0, 10, global.room.ownerId, -90, FrameSyncCmd.right, null, player.robotName);
+        }
+    })
+}
+
+function roomMatch(roomInfo) {
+    // 房间匹配
+    let roomProp = null;
+    if(roomInfo.customRoomProperties) {
+        roomProp = JSON.parse(roomInfo.customRoomProperties);
+    }
+    roomInfo.players.forEach((p) => {
+        if(roomProp.frameSyncPlayerArr) {
+            let item = roomProp.frameSyncPlayerArr.find(item => item.playerId === p.playerId);
+            initPlayer(item.x, item.y, item.playerId, item.rotation, item.cmd, null, item.robotName);
+        }
+        else {
+            if (roomInfo.ownerId !== p.playerId) {
+                // 如果不是房主
+                initPlayer(19, 0, p.playerId, 90, FrameSyncCmd.left, null, p.robotName);
+            } else {
+                // 如果是房主
+                initPlayer(0, 10, roomInfo.ownerId, -90, FrameSyncCmd.right, null, p.robotName);
+            }
         }
     });
 }
@@ -160,22 +163,31 @@ function teamMatch(redTeamId: any, roomInfo) {
     // 组队匹配
     let yellowYCoordinates = 0;
     let redYCoordinates = 10;
-    roomInfo.players.forEach((p, i) => {
-        if (redTeamId === p.teamId) {
-            // 红队
-            initPlayer(0, redYCoordinates, p.playerId, -90, FrameSyncCmd.right, Team.red, p.robotName);
-            redYCoordinates--;
+    let roomProp = null;
+    if(roomInfo.customRoomProperties) {
+        roomProp = JSON.parse(roomInfo.customRoomProperties);
+    }
+    roomInfo.players.forEach((p) => {
+        if(roomProp.frameSyncPlayerArr) {
+            let item = roomProp.frameSyncPlayerArr.find(item => item.playerId === p.playerId);
+            initPlayer(item.x, item.y, item.playerId, item.rotation, item.cmd, null, item.robotName);
         } else {
-            // 黄队
-            initPlayer(19, yellowYCoordinates, p.playerId, 90, FrameSyncCmd.left, Team.yellow, p.robotName);
-            yellowYCoordinates++;
+            if (redTeamId === p.teamId) {
+                // 红队
+                initPlayer(0, redYCoordinates, p.playerId, -90, FrameSyncCmd.right, Team.red, p.robotName);
+                redYCoordinates--;
+            } else {
+                // 黄队
+                initPlayer(19, yellowYCoordinates, p.playerId, 90, FrameSyncCmd.left, Team.yellow, p.robotName);
+                yellowYCoordinates++;
+            }
         }
     });
 }
 
 function getRedTeamId(roomInfo) {
     let redTeamId = null;
-    roomInfo.players.forEach((p, i) => {
+    roomInfo.players.forEach((p) => {
         if (roomInfo.ownerId === p.playerId) {
             // 如果是房主
             redTeamId = p.teamId;
@@ -189,13 +201,12 @@ export function setDefaultFrameState() {
     const roomInfo = global.room;
     frameSyncPlayerList.players = [];
     let redTeamId = getRedTeamId(roomInfo);
-    if (redTeamId === undefined || redTeamId === null) {
-        global.isTeamMode = false;
-        roomMatch(redTeamId, roomInfo);
-    }
-    if (redTeamId !== undefined && redTeamId !== null) {
+    if (redTeamId) {
         global.isTeamMode = true;
         teamMatch(redTeamId, roomInfo);
+    } else {
+        global.isTeamMode = false;
+        roomMatch(roomInfo);
     }
 }
 
@@ -208,7 +219,6 @@ function setPlayerCMD(id: string, cmd: FrameSyncCmd, x: number, y: number) {
     cmd === FrameSyncCmd.down && (player.rotation = 180);
     cmd === FrameSyncCmd.left && (player.rotation = 90);
     cmd === FrameSyncCmd.right && (player.rotation = -90);
-
 }
 
 /**

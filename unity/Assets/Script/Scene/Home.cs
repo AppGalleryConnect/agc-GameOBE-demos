@@ -15,23 +15,21 @@
  */
 
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Com.Huawei.Game.Gobes;
 using UnityEngine.UI;
 using System;
-using System.Security.Cryptography;
-using System.Text;
 using Com.Huawei.Game.Gobes.Config;
 using Com.Huawei.Game.Gobes.SDKLog;
+using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
-using TMPro;
 using NLog;
+
 
 public class Home : MonoBehaviour
 {
     public Button Button = null;
+    public Button ClearButton = null;
     public Dialog Dailog = null;
-
     public Dropdown GameIdDropDown;
     public InputField GameIdInput;
     public Dropdown ClientIdDropDown;
@@ -42,6 +40,7 @@ public class Home : MonoBehaviour
     public InputField MatchCodeInput;
     public InputField AccessTokenInput;
     public Toggle FairMatchToggle;
+    public Toggle IsGuestLogin;
     public Boolean isPass = false;
     public InputField handleFrameRateInput;
     public Text EnvName;
@@ -77,7 +76,7 @@ public class Home : MonoBehaviour
         this.Button.onClick.AddListener(() => GoHall());
         this.GameIdDropDown.onValueChanged.AddListener(delegate { OnGameIdChanged(0); });
         this.GameIdInput.onValueChanged.AddListener(delegate { OnGameIdChanged(1); });
-
+		this.ClearButton.onClick.AddListener(() => DeleteOpenId()); 
         this.ClientIdDropDown.onValueChanged.AddListener(delegate { OnClientIdChanged(0); });
         this.ClientIdInput.onValueChanged.AddListener(delegate { OnClientIdChanged(1); });
         this.ClientSecrectDropDown.onValueChanged.AddListener(delegate { OnClientSecretChanged(0); });
@@ -85,7 +84,6 @@ public class Home : MonoBehaviour
         this.MatchCodeDropDown.onValueChanged.AddListener(delegate { OnMatchCodeChanged(0); });
         this.MatchCodeInput.onValueChanged.AddListener(delegate { OnMatchCodeChanged(1); });
     }
-
     void InitSDK()
     {
         if (Util.IsInited())
@@ -93,6 +91,9 @@ public class Home : MonoBehaviour
             Debug.Log("SDK 已经初始化，无需重复操作");
             return;
         }
+        ChooseOpenIdType();
+
+        Debug.Log("openId:"+Config.openId);
         Debug.Log("SDK 需要初始化");
         Global.gameId = GameIdDropDown.value == 0 ? GameIdInput.text : GameIdDropDown.options[GameIdDropDown.value].text.Split('(')[0];
         Global.matchCode = MatchCodeDropDown.value == 0 ? MatchCodeInput.text : MatchCodeDropDown.options[MatchCodeDropDown.value].text;
@@ -126,20 +127,38 @@ public class Home : MonoBehaviour
         {
             client.Init(response =>
             {
-                if (response.RtnCode == 0)
-                {
-                    Debug.Log("鉴权成功");
-                    Global.client = client;
-                    Global.playerId = client.GetPlayerId();
-                    // demo生成昵称保存到global
-                    Global.playerName = Util.MockPlayerName();
-                    Debug.Log(Global.playerId);
-                }
-                else
+                if (response.RtnCode!=0)
                 {
                     client.Destroy();
                     Debug.Log("鉴权失败"+response.RtnCode+"|"+response.Msg);
                     OpenDialog(Util.ErrorMessage(response));
+                    return;
+                }
+
+                Debug.Log("鉴权成功");
+                Global.client = client;
+                Global.playerId = client.GetPlayerId();
+                Debug.Log(Global.playerId);
+                Debug.Log("玩家昵称："+Global.playerName);
+                try
+                {
+                    if (!string.IsNullOrEmpty(client.GetLastRoomId()))
+                    {
+                        // 断线重连场景，直接加入房间
+                        JoinRoomConfig joinRoomReq = new JoinRoomConfig()
+                        {
+                            RoomId = client.GetLastRoomId()
+                        };
+                        PlayerConfig playerInfo = new PlayerConfig();
+                        Global.room = Global.client.JoinRoom(joinRoomReq, playerInfo, JoinRoomCallback);
+
+                    }
+                }
+                catch (SDKException e)
+                {
+                    Debug.Log("重新加入房间异常");
+                    SDKDebugLogger.Log("重新加入房间失败, failMsg={}",e.Message);
+                    LeaveRoom();
                 }
             });
         }
@@ -152,28 +171,117 @@ public class Home : MonoBehaviour
         Application.quitting += ()=> client.Destroy();
     }
 
-    void GoHall()
+    private void LeaveRoom()
     {
+        // 调用离开房间接口
+        Global.client.LeaveRoom(res =>
+        {
+            if (res.RtnCode == 0)
+            {
+                Debug.Log("离开房间success");
+                Route.GoHall();
+            }
+            else
+            {
+                Debug.Log("离开房间fail");
+            }
+        });
+    }
+
+    private void ChooseOpenIdType()
+    {
+        if (IsGuestLogin.isOn)
+        {
+            Config.openId = Util.MockOpenId();
+            // demo生成昵称保存到global
+            Global.playerName = Util.MockPlayerName();
+        }
+        else
+        {
+            if ( String.IsNullOrEmpty(PlayerPrefs.GetString("openId")))
+            {
+                PlayerPrefs.SetString("openId",Util.MockOpenId());
+                PlayerPrefs.SetString("playerName",Util.MockPlayerName());
+                PlayerPrefs.Save();
+            }
+            Config.openId = PlayerPrefs.GetString("openId");
+            Global.playerName = PlayerPrefs.GetString("playerName");
+        }
+    }
+
+    private void DeleteOpenId()
+    {
+        PlayerPrefs.DeleteKey("openId");
+    }
+
+
+    public void JoinRoomCallback(JoinRoomBaseResponse res)
+    {
+        if (res.RtnCode == 0)
+        {
+            Global.reconnectState = res.RoomInfo.RoomStatus;
+        }
+        else
+        {
+            Debug.Log("重新加入房间失败");
+            SDKDebugLogger.Log("重新加入房间失败,code={}, failMsg={}",res.RtnCode,res.Msg);
+            LeaveRoom();
+        }
+    }
+
+    void GoHall() {
 
         CheckParam();
-        if (!isPass)
-            {
-            return;
-        }
+        if (!isPass) return;
+
         isPass = false;
         InitSDK();
         if (!Util.IsInited())
-            {
+        {
             OpenDialog("鉴权失败");
             return;
         }
-        if (Global.isAsymmetric)
+
+        if (Global.reconnectState == (int) RoomStatus.SYNCING)
         {
-            Route.GoAsymmetricMatchSetting();
-        }
-        else {
+            Debug.Log("玩家重进游戏");
+            Global.state = 1;
+            Global.isReconnect = true;
+            Global.player = Global.room._player;
+            Route.GoGameView();
+        }else if (Global.reconnectState == (int) RoomStatus.RECYCLING)
+        {
+            Global.room = null;
             Route.GoHall();
-        } 
+        }else if (Global.reconnectState == (int) RoomStatus.IDLE)
+        {
+            Debug.Log("玩家重进房间");
+            Global.isReconnect = true;
+            Global.player = Global.room._player;
+            int RoomType = PlayerPrefs.GetInt("roomType");
+            Debug.Log("roomtype"+RoomType);
+            if (RoomType== (int)FrameSync.RoomType.ROOM)
+            {
+                Route.GoRoom();
+            }else if(RoomType == (int)FrameSync.RoomType.TEAMROOM)
+            {
+                Route.GoTeamRoom(); 
+            }else if(RoomType == (int)FrameSync.RoomType.ASYCROOM)
+            {
+                Route.GoAsymmetricRoom(); 
+            }
+            
+        }
+        else
+        {
+            if (Global.isAsymmetric)
+            {
+                Route.GoAsymmetricMatchSetting();
+            }
+            else {
+                Route.GoHall();
+            }
+        }
     }
 
     public void OpenDialog(string msg)
@@ -345,5 +453,4 @@ public class Home : MonoBehaviour
                 break;
         }
     }
-
 }

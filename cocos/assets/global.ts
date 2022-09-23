@@ -15,13 +15,12 @@
  */
 
 import configs from "./config";
+import {RoomType} from "./Script/commonValue";
 import {RoomInfo} from "./GOBE/GOBE";
 
 class GlobalData {
     public gameId: string = configs.gameId;
     public room: GOBE.Room = null;
-    public state: number = null; // 帧同步状态 0停止帧同步，1开始帧同步
-    public keyOperate: number = 1; // 按键操作限制 0限制操作，1允许操作
     public player: GOBE.Player = null;
     public playerId: string = null;
     public client: GOBE.Client = null;
@@ -34,6 +33,8 @@ class GlobalData {
     public playerName: string = "";
     public bulletId: number = 0;
     public unhandleFrames: GOBE.RecvFrameMessage[] = []; //未处理的帧
+    public curHandleFrameId: number = 0; // 当前处理到的帧id
+    public roomType: RoomType = RoomType.NULL;    // 房间类型，区分1v1、2v2、3v1类型房间，重连时用
 }
 
 export default new GlobalData();

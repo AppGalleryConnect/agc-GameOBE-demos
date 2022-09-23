@@ -15,9 +15,12 @@
  */
 
 import * as Util from "../../util";
+import {RoomType} from "../commonValue";
 import global from "../../global";
 import Dialog from "../comp/Dialog";
 import {PlayerInfo} from "../../GOBE/GOBE";
+import {setRoomType} from "../function/Common";
+
 
 export enum PlayerOnline {
     online = 1,  // 在线
@@ -87,6 +90,10 @@ export default class TeamRoom extends cc.Component {
         this.initView();
         this.initListener();
         this.initSchedule();
+        setRoomType(RoomType.TwoVTwo);
+        if(global.room.isSyncing){
+            cc.director.loadScene("game");
+        }
     }
 
     initView() {
@@ -157,9 +164,9 @@ export default class TeamRoom extends cc.Component {
 
     private setYellowPlayer(player, playerNo: number) {
         let isPlayerStatus = player.customPlayerStatus === 1;
-        let playerName = '';
+        let playerName: string;
 
-        if(player.isRobot === 1) {
+        if (player.isRobot === 1) {
             playerName = player.robotName || `机器人${player.playerId}`;
             switch (playerNo) {
                 case 1:
@@ -204,7 +211,7 @@ export default class TeamRoom extends cc.Component {
     }
 
     private setRedPlayer(player) {
-        if(player.isRobot === 1) {
+        if (player.isRobot === 1) {
             this.playerTwoName.fontSize = 10;
             this.playerTwoStatus.string = "已准备";
             this.playerTwoName.string = player.robotName || `机器人${player.playerId}`;
@@ -218,7 +225,7 @@ export default class TeamRoom extends cc.Component {
             }
             this.playerTwoStatus.string = isPlayerStatus ? "已准备" : "未准备";
             let playerProperties = JSON.parse(player.customPlayerProperties);
-            this.playerTwoName.string =  playerProperties["playerName"] ?
+            this.playerTwoName.string = playerProperties["playerName"] ?
                 playerProperties["playerName"] : player.playerId;
         }
 
@@ -271,6 +278,8 @@ export default class TeamRoom extends cc.Component {
         Util.printLog(`正在退出房间`);
         global.client.leaveRoom().then((client) => {
             // 退出房间成功
+            global.roomType = RoomType.NULL;
+            global.client = client;
             Util.printLog("退出房间成功");
         }).catch((e) => {
             // 退出房间失败
@@ -352,10 +361,6 @@ export default class TeamRoom extends cc.Component {
         });
     }
 
-    relogin() {
-        global.client.init();
-    }
-
     onDisable() {
         // 关闭对话框
         Dialog.close();
@@ -383,7 +388,6 @@ export default class TeamRoom extends cc.Component {
     onLeaving(playerInfo: PlayerInfo) {
         Util.printLog("广播--离开房间");
         if (global.playerId === playerInfo.playerId) {
-            this.relogin();
             cc.director.loadScene("hall");
         } else {
             this.initRoomView()
@@ -392,8 +396,6 @@ export default class TeamRoom extends cc.Component {
 
     onStartFrameSync() {
         Util.printLog("广播--开始帧同步");
-        global.state = 1;
-        global.keyOperate = 1;
         cc.director.loadScene("game");
     }
 

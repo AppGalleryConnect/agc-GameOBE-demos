@@ -16,9 +16,7 @@
 
 using Com.Huawei.Game.Gobes;
 using Com.Huawei.Game.Gobes.Utils;
-using Newtonsoft.Json;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UnityEngine;
@@ -30,7 +28,6 @@ public class Util {
     private readonly static string _openIdOption = "0123456789abcdefghijklmnopqrstuvwxyz";
     
     public readonly static string  _robotPrefix = "机器人";
-
     /**
      * 随机产生 openId
      */
@@ -134,7 +131,7 @@ public class Util {
                 PlayerName = playerName,
                 TeamNumber = teamNumber
             };
-            result = JsonConvert.SerializeObject(ackData);
+            result = CommonUtils.JsonSerializer(ackData);
         }
         else {
             result = playerName;
@@ -148,7 +145,16 @@ public class Util {
         {
             PlayerName = robotName,
         };
-        return JsonConvert.SerializeObject(ackData);
+        return CommonUtils.JsonSerializer(ackData);
     }
 
+
+    public static void SaveRoomType(FrameSync.RoomType room)
+    {
+        if (Config.openId == PlayerPrefs.GetString("openId"))
+        {
+            PlayerPrefs.SetInt("roomType",(int)room);
+            PlayerPrefs.Save();
+        }
+    }
 }

@@ -17,11 +17,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Com.Huawei.Game.Gobes.Model;
 using UnityEngine;
-using Newtonsoft.Json;
 using Com.Huawei.Game.Gobes;
-using Com.Huawei.Game.Gobes.Room;
-using Newtonsoft.Json.Linq;
+using Com.Huawei.Game.Gobes.Utils;
+
+
 public class FrameSync {
 
     public static List<ServerFrameMessage> frames = new List<ServerFrameMessage>();
@@ -43,6 +44,7 @@ public class FrameSync {
     };
     
     // 游戏帧同步命令
+    [DataContract]
     public enum FrameSyncCmd {
         up = 1,
         down = 2,
@@ -57,6 +59,13 @@ public class FrameSync {
         red = 0,
         yellow = 1,
     };
+    
+    
+    public enum RoomType {
+        ROOM = 0,
+        TEAMROOM = 1,
+        ASYCROOM = 2
+    }
 
     public enum CollideTagEnum
     {
@@ -76,14 +85,31 @@ public class FrameSync {
         public int offset { get; set; } = 0;
         public int speed { get; set; } = 0;
     }
-    
+
+    [DataContract]
+    public class CustomFrameData
+    {
+        [DataMember]
+        public State state;
+    }
+
+    [DataContract]
+    public class State
+    {
+        [DataMember]
+        public string cmd;
+    }
     //子弹
+    [DataContract]
     public class Bullet {
+        [DataMember]
         public FrameSyncCmd cmd { get; set; }
     }
     
     //碰撞帧数据
+    [DataContract]
     public class CollisionFrameData {
+        [DataMember]
         public FrameSyncCmd cmd { get; set; }
     }
 
@@ -130,19 +156,19 @@ public class FrameSync {
             if (frameData != null && frameData.Length > 0) {
                 foreach (string data in frameData)
                 {
-                    JObject obj = (JObject)JsonConvert.DeserializeObject(data);
-                    string cmd = obj["state"]["cmd"].ToString();
+                    CustomFrameData customFrameData = CommonUtils.JsonDeserializer<CustomFrameData>(data);
+                    string cmd = customFrameData.state.cmd;
                     if ((int)FrameSyncCmd.fire==int.Parse(cmd))
                     {
                         BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet> bullet =
-                            JsonConvert.DeserializeObject<BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet>>(data);
+                            CommonUtils.JsonDeserializer<BulletList<FrameSync.Bullet>.BulletData<FrameSync.Bullet>>(data);
                         Debug.Log("bullet:"+bullet.bulletId);
                         //创建子弹数据
                         CreateBulletData(bullet);
                     }else if ((int) FrameSyncCmd.collide == int.Parse(cmd))
                     {
                         CollisionFrameList<FrameSync.CollisionFrameData>.CollisionFrameData<FrameSync.CollisionFrameData> cllisionFrameData =
-                            JsonConvert.DeserializeObject<CollisionFrameList<FrameSync.CollisionFrameData>.CollisionFrameData<FrameSync.CollisionFrameData>>(data);
+                            CommonUtils.JsonDeserializer<CollisionFrameList<FrameSync.CollisionFrameData>.CollisionFrameData<FrameSync.CollisionFrameData>>(data);
 
                         Debug.Log("发生碰撞:"+data);
                         HandleCollide(cllisionFrameData);
@@ -150,7 +176,7 @@ public class FrameSync {
                     else 
                     {
                         PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player =
-                            JsonConvert.DeserializeObject<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>>(data);
+                            CommonUtils.JsonDeserializer<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>>(data);
                         if (player.isRobot == 1)
                         {
                             SetPlayerCMD(player.id, player.state.cmd, player.x, player.y);
@@ -230,7 +256,7 @@ public class FrameSync {
     }
 
     // 初始化玩家的坐标、方向、命令、玩家队伍
-    static void InitPlayer(int x, int y, PlayerInfo playerInfo, int rotation, FrameSyncCmd cmd, string playerTeamId) {
+    public static void InitPlayer(int x, int y, PlayerInfo playerInfo, int rotation, FrameSyncCmd cmd, string playerTeamId) {
         // 初始化用户信息
         PlayerList<Player>.PlayerData<Player> player = new PlayerList<Player>.PlayerData<Player>();
         player.x = x;
@@ -290,7 +316,7 @@ public class FrameSync {
     }
 
     // 设置玩家的操作命令、位置信息
-    static void SetPlayerCMD(string playerId, FrameSyncCmd cmd, int x, int y) {
+    public static void SetPlayerCMD(string playerId, FrameSyncCmd cmd, int x, int y) {
         if (frameSyncPlayerList != null && frameSyncPlayerList.Count > 0) {
             foreach (PlayerList<Player>.PlayerData<Player> player in frameSyncPlayerList)
             {

@@ -25,6 +25,8 @@ using Com.Huawei.Game.Gobes.Room;
 public class CreateRoom : MonoBehaviour
 {
     private string roomName;
+    
+    public Dialog Dailog;
 
     // 0:公开房间,1:私有房间
     private int isOpen = 0;
@@ -52,6 +54,8 @@ public class CreateRoom : MonoBehaviour
 
         Global.Room = Global.client.CreateRoom(createRoomConfig, playerConfig, response => {
             if (response.RtnCode != 0) {
+                Dialog dialog = Instantiate(Dailog);
+                dialog.Open("提示", "创建房间失败" + Util.ErrorMessage(response)); 
                 return;
             }
             // 跳转到房间

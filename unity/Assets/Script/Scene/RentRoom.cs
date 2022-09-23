@@ -18,8 +18,8 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
-using Newtonsoft.Json;
 
 public class RentRoom : MonoBehaviour
 {
@@ -45,11 +45,16 @@ public class RentRoom : MonoBehaviour
         InitListener();
         // 由于玩家切换准备状态无法感知，故通过轮询来
         InvokeRepeating("GetRoomInfo", 0f, pollTime);
+        if(Global.Room.roomInfo.RoomStatus ==(int)RoomStatus.SYNCING ) {
+            OnStartFrameSync();
+        }
     }
 
+
     public void InitListener() {
+        Util.SaveRoomType(FrameSync.RoomType.ROOM);
         Global.Room.OnJoin = (res) => {
-            Debug.Log("加入后的回调" + JsonConvert.SerializeObject(res));
+            Debug.Log("加入后的回调" + CommonUtils.JsonSerializer(res));
             UnityMainThread.wkr.AddJob(GetRoomInfo);
         };
 
@@ -65,12 +70,7 @@ public class RentRoom : MonoBehaviour
             UnityMainThread.wkr.AddJob(Route.GoHall);
         };
 
-        Global.Room.OnStartSyncFrame = () => {
-            SDKDebugLogger.Log("广播--游戏帧同步开始");
-            Global.state = 1; // 帧同步状态 0停止帧同步，1开始帧同步
-            Global.keyOperate = 1; // 按键操作限制 0限制操作，1允许操作
-            UnityMainThread.wkr.AddJob(Route.GoGameView);
-        };
+        Global.Room.OnStartSyncFrame = () => OnStartFrameSync();
     }
 
     private void RenderView()
@@ -212,5 +212,14 @@ public class RentRoom : MonoBehaviour
     
     void ReLogin() { 
         Global.client.Init(response => {});
+    }
+    
+    
+    private void OnStartFrameSync()
+    {
+        SDKDebugLogger.Log("广播--游戏帧同步开始");
+        Global.state = 1; // 帧同步状态 0停止帧同步，1开始帧同步
+        Global.keyOperate = 1; // 按键操作限制 0限制操作，1允许操作
+        UnityMainThread.wkr.AddJob(Route.GoGameView);
     }
 }

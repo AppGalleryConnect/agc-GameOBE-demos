@@ -16,13 +16,34 @@
 
 using System;
 using System.Collections.Generic;
+using Com.Huawei.Game.Gobes.Model;
 using UnityEngine;
 using UnityEngine.UI;
 using Com.Huawei.Game.Gobes;
 using Com.Huawei.Game.Gobes.Group;
+using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+
+[DataContract]
+public class ServerEventParam
+{
+    [DataMember(Name = "group")]
+    public EventGroup Group { set; get; }
+
+}
+[DataContract]
+public class EventGroup
+{
+    [DataMember(Name = "players")]
+    public EventPlayer[] Players { set; get; }
+}
+
+public class EventPlayer
+{
+    [DataMember(Name = "playerId")] 
+    public string PlayerId { set; get; }
+}
+
 
 public class Team : MonoBehaviour
 {
@@ -179,16 +200,16 @@ public class Team : MonoBehaviour
         if(serverEvent == null) {
             return;
         }
-        JObject parseEventParam = null;
+        ServerEventParam parseEventParam = null;
         if (serverEvent.EventParam != "") {
-            parseEventParam = JsonConvert.DeserializeObject<JObject>(serverEvent.EventParam);
+            parseEventParam = CommonUtils.JsonDeserializer<ServerEventParam>(serverEvent.EventParam);
         }
 
         // 当前操作人id（比如是谁退出了队伍）
         string operatorId = "";
-        if (parseEventParam["group"] != null && parseEventParam["group"]["players"] != null &&
-            parseEventParam["group"]["players"][0] != null && parseEventParam["group"]["players"][0]["playerId"] != null) {
-            operatorId = parseEventParam["group"]["players"][0]["playerId"].ToString();
+        if (parseEventParam.Group != null && parseEventParam.Group.Players != null &&
+            parseEventParam.Group.Players[0] != null && parseEventParam.Group.Players[0].PlayerId != null) {
+            operatorId = parseEventParam.Group.Players[0].PlayerId;
         }
         if (operatorId == Global.playerId) {  
             // 是本人退出
@@ -255,7 +276,7 @@ public class Team : MonoBehaviour
     void OnTeamMatch(ServerEvent serverEvent) {
         Debug.Log("isOwner:" + this.isOwner);
         Debug.Log("心跳：匹配开始通知，serverEvent =" + serverEvent);
-        if (!this.isOwner && serverEvent.EventType == "1") {
+        if (!this.isOwner && serverEvent.EventType == (int)ServerEventCode.MATCH_START) {
             // 如果不是队长就弹出匹配中
             UnityMainThread.wkr.AddJob(() => {
                 Reloading loading = Instantiate(Loading);

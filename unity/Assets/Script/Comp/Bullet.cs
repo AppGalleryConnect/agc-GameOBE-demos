@@ -15,7 +15,7 @@
  */
 
 using System.Linq;
-using Newtonsoft.Json;
+using Com.Huawei.Game.Gobes.Utils;
 using UnityEngine;
 public class Bullet : MonoBehaviour
 {
@@ -55,7 +55,7 @@ public class Bullet : MonoBehaviour
             collisionFrameData.playerId = playerId;
             collisionFrameData.bulletId = bullectId;
             
-            string frameData = JsonConvert.SerializeObject(collisionFrameData);
+            string frameData = CommonUtils.JsonSerializer(collisionFrameData);
             // 调用SDK发送帧数据
             string[] frameDatas = new string[] { frameData };
             Global.Room.SendFrame(frameDatas, response => {});

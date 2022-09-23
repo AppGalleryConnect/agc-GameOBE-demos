@@ -16,6 +16,7 @@
 
 import global from "../../global";
 import {CollideTagEnum, frameSyncBulletList, FrameSyncCmd} from "../function/FrameSync";
+import * as Util from "../../util";
 
 const {ccclass, property} = cc._decorator;
 /**
@@ -53,7 +54,7 @@ export default class Bullet extends cc.Component {
 
     /**
      * 碰撞检测
-     * @param other 
+     * @param other
      */
     onCollisionEnter (other, self) {
         if(other.tag == CollideTagEnum.aircraft){
@@ -66,7 +67,12 @@ export default class Bullet extends cc.Component {
                 cmd, otherTag, selfTag, playerId, bullectId
             };
             let frameData: string = JSON.stringify(data);
-            global.room.sendFrame(frameData);
+            try{
+                global.room.sendFrame(frameData);
+            }
+            catch (e) {
+                Util.printLog('Bullet onCollisionEnter sendFrame err: ' + e);
+            }
         }
     }
 

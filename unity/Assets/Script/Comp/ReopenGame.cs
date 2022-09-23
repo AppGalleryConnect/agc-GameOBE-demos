@@ -45,25 +45,25 @@ public class ReopenGame : MonoBehaviour
     }
 
     public void Reopen() {
-        // ´¦ÀíÈ·ÈÏ»Øµ÷ÊÂ¼ş
+        // å¤„ç†ç¡®è®¤å›è°ƒäº‹ä»¶
         if (this.Callback != null) {
             this.Callback.Reopen();
         }
-        // Ïú»Ùdialog
+        // é”€æ¯dialog
         DialogDestroy();
     }
 
     public void Exit() {
-        // ´¦ÀíÈ·ÈÏ»Øµ÷ÊÂ¼ş
+        // å¤„ç†ç¡®è®¤å›è°ƒäº‹ä»¶
         if (this.Callback != null)
         {
             this.Callback.Exit();
         }
-        // Ïú»Ùdialog
+        // é”€æ¯dialog
         DialogDestroy();
     }
 
-    // ´ò¿ª¶Ô»°¿ò
+    // æ‰“å¼€å¯¹è¯æ¡†
     public void Open(String title, String content)
     {
         this.Title.text = title;
@@ -77,7 +77,7 @@ public class ReopenGame : MonoBehaviour
         Destroy(bg);
     }
 
-    // Ìí¼ÓÊÂ¼ş¼àÌı
+    // æ·»åŠ äº‹ä»¶ç›‘å¬
     public void AddEventListener(ReopenCallback Callback) {
         this.Callback = Callback;
     }

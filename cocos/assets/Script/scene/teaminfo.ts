@@ -83,6 +83,4 @@ export default class TeamInfo extends cc.Component {
             Dialog.open("提示", "加入队伍失败" + Util.errorMessage(e));
         });
     }
-
-
 }

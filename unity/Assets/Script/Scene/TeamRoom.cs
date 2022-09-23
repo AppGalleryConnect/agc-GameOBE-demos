@@ -21,6 +21,7 @@ using Com.Huawei.Game.Gobes.Room;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -80,6 +81,9 @@ public class TeamRoom : MonoBehaviour
     {
         InitRoomView();
         InitListener();
+        if(Global.Room.roomInfo.RoomStatus ==(int)RoomStatus.SYNCING ) {
+            OnStartFrameSync();
+        }
     }
 
     // ====================刷新房间信息====================
@@ -103,7 +107,7 @@ public class TeamRoom : MonoBehaviour
     {
         if (Global.Room != null)
         {
-            Global.room.Update(response =>
+            Global.Room.Update(response =>
             {
                 if (response.RtnCode == 0)
                 {
@@ -114,6 +118,7 @@ public class TeamRoom : MonoBehaviour
     }
 
     void InitListener() {
+        Util.SaveRoomType(FrameSync.RoomType.TEAMROOM);
         // 监听加入房间
         Global.Room.OnJoin = playerInfo => OnJoining();
         // 监听开始帧同步
@@ -353,7 +358,7 @@ public class TeamRoom : MonoBehaviour
     public void StartTeamGame()
     {
         Debug.Log("开始组队匹配游戏");
-        Global.room.Update(response => {
+        Global.Room.Update(response => {
             if (response.RtnCode == 0)
             {
                 int readyStatus = 1;

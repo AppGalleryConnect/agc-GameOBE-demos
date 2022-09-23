@@ -122,7 +122,7 @@ export default class FrameSyncView extends cc.Component {
     }
 
     onKeyDown(event) {
-        if (global.state === 1 && global.keyOperate === 1) {
+        if (global.room.isSyncing) {
             switch (event && event.keyCode) {
                 case 87:
                     return this.onUpButtonClick();

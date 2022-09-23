@@ -26,7 +26,7 @@ public struct CreatFaceParam
     public int index;
     public bool isOwner;
     public string name;
-    public long status;
+    public int? status;
 }
 public class Face : MonoBehaviour
 {

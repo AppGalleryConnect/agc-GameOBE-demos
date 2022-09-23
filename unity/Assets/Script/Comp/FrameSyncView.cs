@@ -15,13 +15,11 @@
  */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using Newtonsoft.Json;
 using Com.Huawei.Game.Gobes;
-using UnityEngine.SceneManagement;
+using Com.Huawei.Game.Gobes.Utils;
 
 public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
 {
@@ -49,22 +47,46 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     // 游戏画布
     public GameCanvas gameCanvas = null;
 
-    
     private static int[] arr1 = {-90, 180, 90};
     private static int[] arr2 = {90, -90, 0};
     private static int[] arr3 = {180, 0, -90};
     private static int[] arr4 = {90, 0, 180};
-    
- 
 
     // Start is called before the first frame update
-    void Start() {
-        this.InitView();
+     void Start() {
+         this.InitView();
         this.InitListener();
         this.InitRobotSchedule();
-    }
+        this.InitSaveGameState();
 
-  
+     }
+
+     // 重现房间状态
+    private void RestoreRoomState()
+    {
+        // 有最新房间状态数据 考虑触发判断
+        if (!string.IsNullOrEmpty(Global.room.roomInfo.CustomRoomProperties) && Global.state == 1 )
+        {
+            //初始化页面
+            string data = Global.room.roomInfo.CustomRoomProperties;
+            SaveToPropertiesInfo saveToPropertiesInfo = CommonUtils.JsonDeserializer<SaveToPropertiesInfo>(data);
+            List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList = saveToPropertiesInfo.playerList;
+      
+            foreach (PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in playerList)
+            {
+                FrameSync.SetPlayerCMD(player.id, player.state.cmd, player.x, player.y);
+            }
+            Global.client.ResetRoomFrameId(saveToPropertiesInfo.currentRoomFrameId, response =>
+            {
+                if (response.RtnCode!=0)
+                {
+                    Dialog dia = Instantiate(dialog);
+                    dia.Open("提示", "重置房间帧id失败" + Util.ErrorMessage(response));
+                }
+                SDKDebugLogger.Log("重置房间帧id={0}",saveToPropertiesInfo.currentRoomFrameId);
+            });
+        }
+    }
 
     void InitView() {
         if (Global.Room == null || Global.Room.roomInfo == null ||
@@ -77,7 +99,6 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     // Update is called once per frame
     void Update() {
         float dt = Time.deltaTime;
-       
         if (Input.GetKeyDown(KeyCode.A)) {
             this.SendFrame(FrameSync.FrameSyncCmd.left);
         }
@@ -93,7 +114,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         if (Input.GetKeyDown(KeyCode.K)) {
             this.SendFireFrame(FrameSync.FrameSyncCmd.fire);
         }
-        
+
         // 绘制玩家
         this.gameCanvas.SetPlayers(FrameSync.frameSyncPlayerList);
         // 绘制云朵
@@ -124,18 +145,111 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         {
             this.SendFireFrame(FrameSync.FrameSyncCmd.fire);
         });
-        
+
         if (Global.Room != null) {
             Global.Room.OnStopSyncFrame = () => this.OnStopFrameSync();
             Global.Room.OnLeave = playerInfo => OnLeave(playerInfo);
+            Global.Room.OnJoin = info => OnJoin(info);
         }
     }
-    
-      private void InitRobotSchedule()
+
+    private void OnJoin(FramePlayerInfo info)
+    {
+        // 判断是否需要初始化
+        if (IsReconnectPlayer(info.PlayerId))
+        {
+            SDKDebugLogger.Log("玩家重连房间 playerId={0} ",info.PlayerId);
+            RestoreRoomState();
+        }
+        else
+        {
+            SDKDebugLogger.Log("玩家进入房间 playerId={0} ,currentOwner={1}",info.PlayerId,Global.Room.roomInfo.OwnerId);
+            InitNewPlayer(info.PlayerId);
+            RestoreRoomState();
+        }
+    }
+
+    private void InitNewPlayer(string playerId)
+    {
+        for (int i = 0; i < Global.room.roomInfo.Players.Length; i++)
+        {
+            if (Global.room.roomInfo.Players[i].PlayerId == playerId)
+            {
+                PlayerInfo playerInfo = Global.room.roomInfo.Players[i];
+                if (playerInfo.PlayerId == Global.Room.roomInfo.OwnerId)
+                {
+                    // 房主
+                    FrameSync.InitPlayer(FrameSync._minX, FrameSync._maxY, playerInfo, -90, FrameSync.FrameSyncCmd.right,
+                        null);
+                }
+                else
+                {
+                    // 非房主
+                    FrameSync.InitPlayer(FrameSync._maxX, FrameSync._minY, playerInfo, 90,
+                        FrameSync.FrameSyncCmd.left, null);
+                }
+            }
+        }
+    }
+
+    private bool IsReconnectPlayer(string playerId)
+    {
+        bool flag = false;
+        if (!string.IsNullOrEmpty(Global.room.roomInfo.CustomRoomProperties) )
+        {
+            string data = Global.room.roomInfo.CustomRoomProperties;
+            SaveToPropertiesInfo saveToPropertiesInfo = CommonUtils.JsonDeserializer<SaveToPropertiesInfo>(data);
+            List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList = saveToPropertiesInfo.playerList;
+            for (var i = 0; i < playerList.Count; i++)
+            {
+                if (playerId == playerList[i].id)
+                {
+                    flag = true;
+                }
+            }
+
+        }
+        return flag;
+    }
+
+
+    // 定时存储房间信息
+    private void InitSaveGameState()
+    {
+        InvokeRepeating("SaveGameState",2f,30f);
+    }
+
+    // 保存房间状态
+    public void SaveGameState()
+    {
+
+        // 玩家在线且为房主，定时任务执行
+        if (Global.state == 1 && Global.playerId == Global.Room.roomInfo.OwnerId)
+        {
+            List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> frameSyncPlayerList = FrameSync.frameSyncPlayerList;
+            SaveToPropertiesInfo saveToPropertiesInfo = new SaveToPropertiesInfo()
+            {
+                playerList = frameSyncPlayerList,
+                currentRoomFrameId = Global.currentRoomFrameId
+            };
+            string data = CommonUtils.JsonSerializer(saveToPropertiesInfo);
+
+            UpdateRoomPropertiesConfig updateRoomProperties = new UpdateRoomPropertiesConfig
+            {
+                CustomRoomProperties = data
+            };
+
+            UpdateRoomProperties(updateRoomProperties);
+            SDKDebugLogger.Log("saveRoomState currentRoomFrameId={0} , currentOwner={1}", 
+                saveToPropertiesInfo.currentRoomFrameId,Global.Room.roomInfo.OwnerId);
+        }
+    }
+
+    private void InitRobotSchedule()
     {
 
         //玩家在线且为房主，调用机器人定时任务执行
-        if (Global.state==1 && Global.playerId == Global.Room.roomInfo.OwnerId)
+        if (Global.state == 1 && Global.playerId == Global.Room.roomInfo.OwnerId )
         {
             InvokeRepeating("RobotRandomMove",2f,1f);
         }
@@ -143,25 +257,25 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
 
     private  void RobotRandomMove()
     {
-        
+
         foreach (PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in FrameSync.frameSyncPlayerList)
         {
             if (player.isRobot == 1)
             {
                 MockRobotMove(player);
-                string frameData = JsonConvert.SerializeObject(player);
+                string frameData = CommonUtils.JsonSerializer(player);
                 // 调用SDK发送帧数据
                 string[] frameDatas = new string[] { frameData };
                 Debug.Log("发送机器人帧：" + frameData);
                 Global.Room.SendFrame(frameDatas, response => {});
             }
         }
-        
+
     }
-    
+
     private  void MockRobotMove(PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> playerInfo)
     {
-        
+
         switch (playerInfo.state.cmd)
         {
             case FrameSync.FrameSyncCmd.up:
@@ -200,7 +314,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                     playerInfo.state.cmd = FrameSync.FrameSyncCmd.right;
                 }
                 break;
-                
+
         }
     }
 
@@ -259,7 +373,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                             break;
                     }
                     player.state.cmd = cmd;
-                    string frameData = JsonConvert.SerializeObject(player);
+                    string frameData = CommonUtils.JsonSerializer(player);
                     // 调用SDK发送帧数据
                     string[] frameDatas = new string[] { frameData };
                     Global.Room.SendFrame(frameDatas, response => {});
@@ -315,7 +429,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                             break;
                     }
 
-                    string frameData = JsonConvert.SerializeObject(bulletList);
+                    string frameData = CommonUtils.JsonSerializer(bulletList);
                     // 调用SDK发送帧数据
                     string[] frameDatas = new string[] { frameData };
                     Global.Room.SendFrame(frameDatas, response => {});
@@ -358,6 +472,14 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                 CancelInvoke("RobotRandomMove");
                 dia.Open("提示", "停止帧同步失败" + Util.ErrorMessage(response));
             }
+            // 停止帧同步清空房间状态
+            UpdateRoomPropertiesConfig updateRoomProperties = new UpdateRoomPropertiesConfig
+            {
+                CustomRoomProperties = ""
+            };
+
+            UpdateRoomProperties(updateRoomProperties);
+
         });
     }
 
@@ -408,7 +530,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     Boolean KeyOperateLimit() {
         return Global.keyOperate == 0;
     }
-        
+
     private void Unready() {
         Global.state = 0;
         Global.player.UpdateCustomStatus(0, response => {
@@ -424,6 +546,12 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         Global.client.LeaveRoom(response => {
             if (response.RtnCode == 0) {
                 Debug.Log("退出房间成功");
+                if (Global.isReconnect)
+                {
+                    UnityMainThread.wkr.AddJob(Route.GoHall);
+                    Global.isReconnect = false;
+                    return;
+                }
                 if (Global.isTeamMode && !Global.isOnlineMatch) {
                     // 组队匹配
                     UnityMainThread.wkr.AddJob(Route.GoTeam);
@@ -441,10 +569,10 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
             }
         });
     }
-    
-    // 重新计算房间内的人员信息 
+
+    // 重新计算房间内的人员信息
     void ReCalPlayers(FramePlayerInfo playerInfo) {
-        List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> players = new 
+        List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> players = new
             List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>>();
         foreach(PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in FrameSync.frameSyncPlayerList) {
             if (player.id != playerInfo.PlayerId) {
@@ -479,6 +607,7 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         // 重新计算房间内的人员信息
         if (playerInfo.PlayerId != Global.playerId) {
             this.ReCalPlayers(playerInfo);
+            SaveGameState();
         } else {
             if (Global.isTeamMode && !Global.isOnlineMatch) {
                 // 组队匹配
@@ -490,4 +619,20 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         }
     }
 
+    // 更新房间状态
+    private void UpdateRoomProperties(UpdateRoomPropertiesConfig updateRoomProperties)
+    {
+        Global.room.UpdateRoomProperties(updateRoomProperties, res =>
+        {
+            if (res.RtnCode == 0)
+            {
+                Debug.Log("savaState Success");
+            }
+            else
+            {
+                Debug.Log($"savaState False {res.Msg}");
+                SDKDebugLogger.Log("savaState failed code={}",res.RtnCode);
+            }
+        });
+    }
 }

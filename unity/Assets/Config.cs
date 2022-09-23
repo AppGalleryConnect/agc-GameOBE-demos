@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Config {
-       public static string openId = Util.MockOpenId();
+       public static string openId = null;
        public static Boolean isOpenSDKLog = true;
 
 }

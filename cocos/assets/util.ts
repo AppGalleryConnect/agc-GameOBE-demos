@@ -16,11 +16,27 @@
 
 import global from "./global";
 import config from "./config";
+import {LoginType} from "./Script/commonValue";
 
 /**
  * 随机产生 openId
  */
-export function mockOpenId() {
+export function mockOpenId(loginType: LoginType) {
+    let str: string;
+    if(loginType === LoginType.Account) {
+        str = cc.sys.localStorage.getItem('openId');
+        if(!str) {
+            str = randomStr();
+            cc.sys.localStorage.setItem('openId', str);
+        }
+    }
+    else {
+        str = randomStr();
+    }
+    return str;
+}
+
+function randomStr(){
     let str = Date.now().toString(36);
 
     for (let i = 0; i < 7; i++) {
@@ -37,7 +53,7 @@ export function mockTeamNumber() {
 
 export function getPlayerMatchParams() {
     if (config.asymmetric) {
-        return {'level': 3, "def":1};
+        return {'level': 3, "def": 1};
     } else {
         return {'level': 2};
     }
@@ -46,7 +62,7 @@ export function getPlayerMatchParams() {
 export function getTeamMatchParams() {
     if (config.asymmetric) {
         return {
-            matchParams : { "teamNumber" : mockTeamNumber()}
+            matchParams: {"teamNumber": mockTeamNumber()}
         };
     } else {
         return null;
@@ -56,17 +72,17 @@ export function getTeamMatchParams() {
 /**
  * 获取玩家自定义属性
  */
-export function  getCustomPlayerProperties() {
+export function getCustomPlayerProperties() {
     let playerName: string = global.playerName;
     let ack: number = 0;
-    let data: Object = {};
+    let data: Object;
     const teamMatchParams = getTeamMatchParams();
-    if(teamMatchParams){    //非对称匹配传的player属性
+    if (teamMatchParams) {    //非对称匹配传的player属性
         ack = teamMatchParams.matchParams.teamNumber;
         data = {
             ack, playerName
         }
-    } else{     // 对称匹配传的属性。
+    } else {     // 对称匹配传的属性。
         data = {
             playerName
         }

@@ -13,14 +13,11 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-using Com.Huawei.Game.Gobes.Model;
+ 
+using System.Collections.Generic;
 
-
-public class AckData 
+public class SaveToPropertiesInfo
 {
-    [DataMember(Name = "playerName")]
-    public string PlayerName { get; set; }
-    [DataMember(Name = "teamNumber")]
-    public string TeamNumber { get; set; }
-
+    public int currentRoomFrameId { get; set; }
+    public List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList { get; set;}
 }

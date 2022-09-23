@@ -38,6 +38,7 @@ import {
     frameSyncPlayerList,
     pushFrames,
     reCalcFrameState,
+    resetFrameSyncPlayerList,
 } from "../function/FrameSync";
 import FrameSyncView from "../comp/FrameSyncView";
 import ReopenGame from "../comp/ReopenGame";
@@ -47,8 +48,7 @@ import {PlayerInfo, Room} from "../../GOBE/GOBE";
 import {CloudData} from "../function/CloudList";
 import GameCanvas from "../comp/GameCanvas";
 import config from "../../config";
-
-
+import {RoomType} from "../commonValue";
 
 const {ccclass, property} = cc._decorator;
 let framesId = 0;
@@ -88,10 +88,16 @@ export default class Game extends cc.Component {
     // 机器人定时任务
     public robotIntervalTask = null;
 
+    // 房主定时同步玩家信息任务
+    public syncRoomPropTask = null;
+
     start() {
         this.initView();
         this.initListener();
+        // 模拟机器人AI任务
         this.initRobotSchedule();
+        // 房主定时同步roomInfo中的customRoomProperties任务
+        this.initSyncRoomPropSchedule();
     }
 
     initView() {
@@ -111,30 +117,89 @@ export default class Game extends cc.Component {
         const dialogNode = cc.instantiate(this.dialogPrefab) as cc.Node;
         dialogNode.parent = this.node;
         // 设置加载Dialog
-        const relaodingNode = cc.instantiate(this.reloadingPrefab) as cc.Node;
-        relaodingNode.parent = this.node;
+        const reloadingNode = cc.instantiate(this.reloadingPrefab) as cc.Node;
+        reloadingNode.parent = this.node;
     }
 
     initListener() {
         // 监听房间
         if (global.room) {
-            global.room.onRecvFrame((frame: GOBE.RecvFrameMessage | GOBE.RecvFrameMessage[]) => {
-                this.onRecvFrame(frame);
-            });
+            global.room.onRecvFrame((frame) => this.onReceiveFrame(frame));
             global.room.onStopFrameSync(() => this.onStopFrameSync());
             global.room.onDismiss(() => this.onDismiss());
             global.room.onLeave((playerInfo) => this.onLeave(playerInfo));
             global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
             global.room.onJoin((playerInfo: PlayerInfo) => this.onJoin(playerInfo)); // 进行补帧
+            global.room.onRequestFrameError((err) => this.onRequestFrameError(err));// 补帧失败回调
         }
+    }
+
+    onRequestFrameError(err) {
+        if (err.code === 10002) {
+            // 重置帧id
+            let roomProp = JSON.parse(global.room.customRoomProperties);
+            if(roomProp.curFrameId) {
+                global.room.resetRoomFrameId(roomProp.curFrameId);
+                Util.printLog('已重置frameId-----------------------------------');
+            }
+        }
+    }
+
+    initSyncRoomPropSchedule() {
+        if (global.room.isSyncing && global.playerId === global.room.ownerId) {
+            this.syncRoomPropTask = setInterval(this.syncRoomProp, 1_000);
+        }
+    }
+
+    syncRoomProp() {
+        // 组装玩家位置和方向信息
+        let frameSyncPlayerArr = [];
+        frameSyncPlayerList.players.forEach((p) => {
+            let cmd: FrameSyncCmd;
+            switch (p.rotation) {
+                case 0:
+                    cmd = FrameSyncCmd.up
+                    break;
+                case 90:
+                    cmd = FrameSyncCmd.left
+                    break;
+                case 180:
+                    cmd = FrameSyncCmd.down
+                    break;
+                case -90:
+                    cmd = FrameSyncCmd.right
+                    break;
+                // no default
+            }
+            let item = {
+                playerId: p.id,
+                x: p.x,
+                y: p.y,
+                rotation: p.rotation,
+                cmd,
+                robotName: p.robotName
+            }
+            frameSyncPlayerArr.push(item);
+        });
+        const roomProperties = {
+            roomType: global.roomType,
+            frameSyncPlayerArr: frameSyncPlayerArr,
+            curFrameId: global.curHandleFrameId
+        }
+
+        global.room.updateRoomProperties({
+            customRoomProperties: JSON.stringify(roomProperties)
+        }).then(() => {
+            Util.printLog('owner updateRoomProperties success');
+        })
     }
 
     initRobotSchedule() {
         let robotArr = global.room.players.filter(player => player.isRobot === 1);
-        if (global.state === 1 &&
+        if (global.room.isSyncing &&
             global.playerId === global.room.ownerId &&
             robotArr.length > 0) {
-            this.robotIntervalTask = setInterval(this.mockRobotAI,500, this, robotArr);
+            this.robotIntervalTask = setInterval(this.mockRobotAI, 500, this, robotArr);
         }
     }
 
@@ -153,37 +218,33 @@ export default class Game extends cc.Component {
         // 机器人过中线若干步长时，随时可能发生转向
         switch (player.rotation) {
             case 0:
-                if(res.y >= 6 + Math.floor(Math.random() * 5)) {
-                    res = this.selectRandomRotation([90,180,-90], res.x, res.y, res.cmd);
-                }
-                else {
+                if (res.y >= 6 + Math.floor(Math.random() * 5)) {
+                    res = this.selectRandomRotation([90, 180, -90], res.x, res.y, res.cmd);
+                } else {
                     res.y++;
                     res.cmd = FrameSyncCmd.up
                 }
                 break;
             case 180:
-                if(res.y <= Math.floor(Math.random() * 6)) {
-                    res = this.selectRandomRotation([90,0,-90], res.x, res.y, res.cmd);
-                }
-                else {
+                if (res.y <= Math.floor(Math.random() * 6)) {
+                    res = this.selectRandomRotation([90, 0, -90], res.x, res.y, res.cmd);
+                } else {
                     res.y--;
                     res.cmd = FrameSyncCmd.down
                 }
                 break;
             case 90:
-                if(res.x <= Math.floor(Math.random() * 6)) {
-                    res = this.selectRandomRotation([0,180,-90], res.x, res.y, res.cmd);
-                }
-                else {
+                if (res.x <= Math.floor(Math.random() * 6)) {
+                    res = this.selectRandomRotation([0, 180, -90], res.x, res.y, res.cmd);
+                } else {
                     res.x--;
                     res.cmd = FrameSyncCmd.left
                 }
                 break;
             case -90:
-                if(res.x >= 10 + Math.floor(Math.random() * 10)) {
-                    res = this.selectRandomRotation([90,180,0], res.x, res.y, res.cmd);
-                }
-                else {
+                if (res.x >= 10 + Math.floor(Math.random() * 10)) {
+                    res = this.selectRandomRotation([90, 180, 0], res.x, res.y, res.cmd);
+                } else {
                     res.x++;
                     res.cmd = FrameSyncCmd.right
                 }
@@ -193,7 +254,12 @@ export default class Game extends cc.Component {
         // 如果是机器人帧，组装机器人playerId
         const data: Object = Object.assign(res, {playerId: player.id});
         let frameData: string = JSON.stringify(data);
-        global.room.sendFrame(frameData);
+        try{
+            global.room.sendFrame(frameData);
+        }
+        catch (e) {
+            Util.printLog('mockRobotMove sendFrame err: ' + e);
+        }
     }
 
     // 选择随机方向转向
@@ -223,12 +289,10 @@ export default class Game extends cc.Component {
 
     // 停止游戏
     stopGame() {
-        global.keyOperate = 0;
         Dialog.open("提示", "确定要停止游戏？", () => {
             Dialog.close();
             this.stopFrameSync();
         }, () => {
-            global.keyOperate = 1;
             Dialog.close();
         });
     }
@@ -239,6 +303,10 @@ export default class Game extends cc.Component {
             // 帧同步停止后清理机器人任务
             if (this.robotIntervalTask) {
                 clearInterval(this.robotIntervalTask);
+            }
+            //停止同步玩家信息
+            if (this.syncRoomPropTask) {
+                clearInterval(this.syncRoomPropTask);
             }
             // 停止帧同步成功
             Util.printLog("停止帧同步成功");
@@ -260,9 +328,11 @@ export default class Game extends cc.Component {
                 if (this.isInRoom(room)) {
                     cc.director.loadScene("room");
                 } else {
+                    global.roomType = RoomType.NULL;
                     cc.director.loadScene("hall");
                 }
             }).catch((e) => {
+                Util.printLog("update err: " + e);
                 cc.director.loadScene("hall");
             });
         }, () => {
@@ -270,6 +340,7 @@ export default class Game extends cc.Component {
             cc.director.loadScene("hall");
         });
     }
+
     // SDK 发送帧消息
     sendFrame(cmd: FrameSyncCmd) {
         let playerList = frameSyncPlayerList.players;
@@ -277,7 +348,7 @@ export default class Game extends cc.Component {
         let x: number = 0;
         let y: number = 0;
         let rotation: number = 0;
-        playerList.forEach((p, i) => {
+        playerList.forEach((p) => {
             if (p.id == playerId) {
                 x = p.x;
                 y = p.y;
@@ -293,7 +364,12 @@ export default class Game extends cc.Component {
             cmd, x, y, rotation
         };
         let frameData: string = JSON.stringify(data);
-        global.room.sendFrame(frameData);
+        try{
+            global.room.sendFrame(frameData);
+        }
+        catch (e) {
+            Util.printLog('sendFrame err: ' + e);
+        }
     }
 
     /**
@@ -303,17 +379,15 @@ export default class Game extends cc.Component {
         let playerId = global.playerId;
         // 当前玩家信息
         let playerData = frameSyncPlayerList.players.find(p => p.id === playerId);
-        let x: number = 0;
-        let y: number = 0;
         let rotation: number = playerData.rotation;
-        let bulletId: number = global.bulletId ++;
+        let bulletId: number = global.bulletId++;
         // 为了计算子弹x、y实际大小，需要获取组件“GameCanvas”的属性“tileSize”
         let parent = cc.find('Canvas/Content/FrameSync/GameCanvas');
         const gameCanvas = parent.getComponent(GameCanvas);
         let tileSize = gameCanvas.tileSize;
         // 计算x、y实际大小
-        x = playerData.x * tileSize + tileSize / 2;
-        y= playerData.y * tileSize + tileSize / 2;
+        let x = playerData.x * tileSize + tileSize / 2;
+        let y = playerData.y * tileSize + tileSize / 2;
         let divergeSize = 30; // 子弹在飞机头上方一段距离生成。
         switch (playerData.rotation) {
             case 0: // 向上
@@ -335,7 +409,12 @@ export default class Game extends cc.Component {
             cmd, playerId, bulletId, x, y, rotation
         };
         let frameData: string = JSON.stringify(data);
-        global.room.sendFrame(frameData);
+        try{
+            global.room.sendFrame(frameData);
+        }
+        catch (e) {
+            Util.printLog('sendFireFrame sendFrame err: ' + e);
+        }
     }
 
     onDisable() {
@@ -392,20 +471,20 @@ export default class Game extends cc.Component {
      * @param frame
      * @private
      */
-    private recvFrameHandle(frame: GOBE.RecvFrameMessage) {
+    private receiveFrameHandle(frame) {
         framesId = frame.currentRoomFrameId;
-        if(framesId % 150 == 0){
+        if (framesId % 150 == 0) {
             //显示圆圈，持续5秒后消失
             let circle = cc.find('Canvas/Content/FrameSync/GameCanvas/CircleSpecial');
-            if(circle.active == true){
+            if (circle.active == true) {
                 circle.active = false;
-            }else{
+            } else {
                 circle.active = true;
-                circle.color = cc.color(237,247,7,255);
+                circle.color = cc.color(237, 247, 7, 255);
             }
         }
         // 更新子弹
-        if(framesId % 10 == 0){
+        if (framesId % 10 == 0) {
             this.updateBulletFly();
         }
         // 获取随机云朵
@@ -424,9 +503,9 @@ export default class Game extends cc.Component {
      * 更新子弹飞行
      * @private
      */
-    private updateBulletFly(){
+    private updateBulletFly() {
         let bulletList = frameSyncBulletList.bullets;
-        bulletList.forEach((bullet, i) => {
+        bulletList.forEach((bullet) => {
             // 计算移动后的 x、y
             let x: number = 0;
             let y: number = 0;
@@ -455,8 +534,9 @@ export default class Game extends cc.Component {
         });
 
     }
+
     // ====================SDK广播====================
-    onRecvFrame(frame: GOBE.RecvFrameMessage | GOBE.RecvFrameMessage[]) {
+    onReceiveFrame(frame) {
         // 本次接收帧存入“未处理帧”数组中,只负责接收,不处理数据
         global.unhandleFrames = global.unhandleFrames.concat(frame);
     }
@@ -465,16 +545,17 @@ export default class Game extends cc.Component {
      * 按游戏帧率处理接收到的帧（每秒60次）
      */
     update() {
-        if(global.unhandleFrames.length > 0){
-            if(global.unhandleFrames.length > 1){  // 未处理的帧如果大于1,表示补帧
+        if (global.unhandleFrames.length > 0) {
+            if (global.unhandleFrames.length > 1) {  // 未处理的帧如果大于1,表示补帧
                 for (let i = 0; i < config.handleFrameRate; i++) {
-                    if(global.unhandleFrames[0]){
-                        this.recvFrameHandle(global.unhandleFrames[0]);
+                    if (global.unhandleFrames[0]) {
+                        this.receiveFrameHandle(global.unhandleFrames[0]);
+                        global.curHandleFrameId = global.unhandleFrames[0].currentRoomFrameId;
                         global.unhandleFrames.shift();
                     }
                 }
-            }else{  // 正常处理
-                this.recvFrameHandle(global.unhandleFrames[0]);
+            } else {  // 正常处理
+                this.receiveFrameHandle(global.unhandleFrames[0]);
                 global.unhandleFrames.shift();
             }
         }
@@ -485,7 +566,17 @@ export default class Game extends cc.Component {
         this.unready();
         // 清空帧数据
         global.unhandleFrames = [];
+        // 清空roomProperties
+        if(global.room.ownerId === global.client.playerId) {
+            global.room.updateRoomProperties({
+                customRoomProperties: ''
+            }).then(() => {
+                Util.printLog('owner reset roomProperties success');
+            })
+        }
+        global.curHandleFrameId = 0;
         frameSyncBulletList.bullets = [];
+        resetFrameSyncPlayerList();
         if (!global.isTeamMode) {
             this.reopenGame();
         } else {
@@ -517,12 +608,11 @@ export default class Game extends cc.Component {
     }
 
     private unready() {
-        global.state = 0;
         global.player.updateCustomStatus(0).then(() => {
             Util.printLog("修改玩家自定义状态成功");
         }).catch((e) => {
             // 修改玩家自定义状态失败
-            Util.printLog("取消准备失败");
+            Util.printLog("取消准备失败,err: " + e);
         });
     }
 
@@ -531,6 +621,7 @@ export default class Game extends cc.Component {
         global.client.leaveRoom().then(() => {
             // 退出房间成功
             Util.printLog("退出房间成功");
+            global.roomType = RoomType.NULL;
         }).catch((e) => {
             // 退出房间失败
             Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
@@ -563,6 +654,7 @@ export default class Game extends cc.Component {
                     cc.director.loadScene("hall");
                 }
             }).catch((e) => {
+                Util.printLog("update err: " + e);
                 cc.director.loadScene("hall");
             });
         }
@@ -583,7 +675,6 @@ export default class Game extends cc.Component {
                 }
                 if (error.code != 0) {
                     // 无法加入房间需要退出到大厅
-                    this.reLogin();
                     cc.director.loadScene("hall");
                 }
             });
@@ -600,10 +691,6 @@ export default class Game extends cc.Component {
             }
         }
         return false
-    }
-
-    reLogin() {
-        global.client.init();
     }
 
 }

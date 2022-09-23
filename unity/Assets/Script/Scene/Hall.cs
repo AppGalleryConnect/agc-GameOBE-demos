@@ -16,13 +16,8 @@
 
 
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using static Dialog;
 using Com.Huawei.Game.Gobes;
-using Com.Huawei.Game.Gobes.Group;
-using System.Collections.Generic;
 using Com.Huawei.Game.Gobes.Utils;
-using System.Threading;
 
 public class Hall : MonoBehaviour
 {
@@ -140,7 +135,7 @@ public class Hall : MonoBehaviour
                     Msg = "快速匹配失败"+Util.ErrorMessage(response);
                     Flag = false;
                 }
-                if (response.RtnCode == 104205) {
+                if (response.RtnCode == (int)ErrorCode.PLAYER_MATCH_CANCELED){
                     Msg = "快速匹配取消" + Util.ErrorMessage(response);
                 }
             });

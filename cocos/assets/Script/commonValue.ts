@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-using Com.Huawei.Game.Gobes.Model;
+ 
+export enum LoginType {
+    Guest = 0,          // 游客登录 每次登录账号随机
+    Account = 1,        // 账号登录 每次登录账号固定
+}
 
-
-public class AckData 
-{
-    [DataMember(Name = "playerName")]
-    public string PlayerName { get; set; }
-    [DataMember(Name = "teamNumber")]
-    public string TeamNumber { get; set; }
-
+export enum RoomType {
+    NULL = 0,
+    OneVOne = 1,        // 1 V 1 类型房间
+    TwoVTwo = 2,        // 2 V 2 类型房间
+    ThreeVOne = 3,      // 3 V 1 类型房间
 }

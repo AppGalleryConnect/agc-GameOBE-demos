@@ -17,7 +17,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
-using Newtonsoft.Json;
 using Com.Huawei.Game.Gobes;
 using System.Collections.Generic;
 using Com.Huawei.Game.Gobes.Utils;
@@ -96,6 +95,48 @@ public class GameView : MonoBehaviour {
             Global.Room.OnRecvFrame = frames => OnRecvFrame(frames);
             Global.Room.OnDismiss = () => OnDismiss();
             Global.Room.OnDisconnect = playerInfo => OnDisconnect(playerInfo);
+            Global.Room.OnRequestFrameError = response => OnRequestFrameError(response);
+        }
+    }
+
+    private void OnRequestFrameError(BaseResponse response)
+    {
+        if (response.RtnCode == (int)ErrorCode.SDK_REQUEST_FRAME_ERROR)
+        {
+            UnityMainThread.wkr.AddJob(() =>
+            {
+                Reloading loading = Instantiate(Loading);
+                loading.Open("重连中...");
+                isReConnect = FrameSync.ReConnectState.reConnectIng;
+            });
+        }
+
+        if (response.RtnCode == (int)ErrorCode.SDK_AUTO_REQUEST_FRAME_FAILED)
+        {
+            
+            UnityMainThread.wkr.AddJob(() =>
+            {
+                if (!string.IsNullOrEmpty(Global.room.roomInfo.CustomRoomProperties) && Global.state == 1 )
+                {
+                    //初始化页面
+                    string data = Global.room.roomInfo.CustomRoomProperties;
+                    SaveToPropertiesInfo saveToPropertiesInfo = CommonUtils.JsonDeserializer<SaveToPropertiesInfo>(data);
+                    List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList = saveToPropertiesInfo.playerList;
+      
+                    foreach (PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in playerList)
+                    {
+                        FrameSync.SetPlayerCMD(player.id, player.state.cmd, player.x, player.y);
+                    }
+                    Global.client.ResetRoomFrameId(saveToPropertiesInfo.currentRoomFrameId, response =>
+                    {
+                        if (response.RtnCode!=0)
+                        {
+                            SDKDebugLogger.Log("重置房间帧id失败,code={0},failMsg={1}",response.RtnCode,response.Msg);
+                        }
+                        SDKDebugLogger.Log("重置房间帧id={0}",saveToPropertiesInfo.currentRoomFrameId);
+                    });
+                }
+            });
         }
     }
 
@@ -147,6 +188,7 @@ public class GameView : MonoBehaviour {
     // 1秒60帧去处理服务端传过来的帧信息
     public static void RecvFrameHandle(ServerFrameMessage frame) {
         long frameId = frame.CurrentRoomFrameId;
+        Global.currentRoomFrameId =  frame.CurrentRoomFrameId;
         //显示圆圈，持续100帧秒后消失
         if(frameId % 150 == 0)
         {
@@ -166,8 +208,8 @@ public class GameView : MonoBehaviour {
         // 绘制随机云朵
         GetRandomCloud(frameId, seed);
         if (frame.FrameInfo != null && frame.FrameInfo.Length > 0) {
+            Debug.Log("接受到帧数据：" + CommonUtils.JsonSerializer(frame));
             if (frame.FrameInfo[0].PlayerId != "0") {
-                Debug.Log("接受到帧数据：" + JsonConvert.SerializeObject(frame));
                 FrameSync.PushFrames(frame);
                 FrameSync.CalcFrame(frame);
             }
@@ -189,7 +231,7 @@ public class GameView : MonoBehaviour {
             cloudData.y = y % FrameSync._maxY;
             cloudData.speed = speed % FrameSync._maxY + 1;
             Debug.Log("seed值:" + seed + " 随机帧id:" + currentRoomFrameId + " 随机数序列:" +
-                random + " 云朵数据:" + JsonConvert.SerializeObject(cloudData));
+                random + " 云朵数据:" + CommonUtils.JsonSerializer(cloudData));
             FrameSync.cloudsList.Add(cloudData);
         }
     }
@@ -239,6 +281,10 @@ public class GameView : MonoBehaviour {
     // 解散房间
     void OnDismiss() {
         Debug.Log("广播--解散房间");
+        if (Global.isReconnect)
+        {
+            UnityMainThread.wkr.AddJob(Route.GoHall); 
+        }
         if (Global.isTeamMode && !Global.isOnlineMatch) {
             // 组队匹配
             UnityMainThread.wkr.AddJob(Route.GoTeam);

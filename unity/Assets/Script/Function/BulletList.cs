@@ -15,16 +15,25 @@
  */
 
 using System.Collections.Generic;
+using Com.Huawei.Game.Gobes.Model;
 
 public class BulletList<T>
 {
+    [DataContract]
     public class BulletData<T>
     {
+        [DataMember]
         public string playerId { get; set; }
+        [DataMember]
         public int bulletId { get; set; }
+        
+        [DataMember]
         public int x { get; set; }
+        [DataMember]
         public int y { get; set; }
+        [DataMember]
         public int rotation { get; set; }
+        [DataMember]
         public T state { get; set; }
     }
     

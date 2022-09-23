@@ -15,7 +15,7 @@
  */
 
 import configs from "../../config";
-
+import {LoginType, RoomType} from "../commonValue";
 import * as Util from "../../util";
 import global from "../../global";
 import Dialog from "../comp/Dialog";
@@ -25,7 +25,10 @@ const {ccclass, property} = cc._decorator;
 @ccclass
 export default class Home extends cc.Component {
     @property(cc.Sprite)
-    button: cc.Sprite = null;
+    loginByGuestBtn: cc.Sprite = null;
+
+    @property(cc.Sprite)
+    loginByAccountBtn: cc.Sprite = null;
 
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
@@ -44,13 +47,13 @@ export default class Home extends cc.Component {
         dialogNode.parent = this.node;
     }
 
-    initSDK() {
+    initSDK(loginType: LoginType) {
         if (Util.isInited()) {
             return Util.printLog("SDK 已经初始化，无需重复操作");
         }
         let clientConfig = {
             appId: configs.gameId,
-            openId: configs.openId, // 区别不同用户
+            openId: Util.mockOpenId(loginType), // 区别不同用户
             clientId: configs.clientId,
             clientSecret: configs.clientSecret,
             accessToken: this.accessTokenEdit.string,
@@ -70,24 +73,57 @@ export default class Home extends cc.Component {
             global.client = client;
             // demo生成昵称保存到global
             global.playerName = Util.mockPlayerName();
-            cc.director.loadScene("hall");
+            if(global.client.lastRoomId){
+                Util.printLog('房间Id' + global.client.lastRoomId);
+                global.client.joinRoom(global.client.lastRoomId,
+                    {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
+                    Util.printLog("加入房间成功");
+                    global.room = room;
+                    global.player = room.player;
+                    Util.printLog('玩家id ：' + global.player.playerId);
+                    Util.printLog('房主id ：' + global.room.ownerId);
+                    // 重置帧id
+                    let roomProp = JSON.parse(global.room.customRoomProperties);
+                    if(roomProp.curFrameId) {
+                        room.resetRoomFrameId(roomProp.curFrameId);
+                    }
+                    if (roomProp.roomType) {
+                        global.roomType = roomProp.roomType;
+                        if(roomProp.roomType === RoomType.OneVOne) {
+                            cc.director.loadScene("room");
+                        } else if (roomProp.roomType === RoomType.TwoVTwo) {
+                            cc.director.loadScene("teamroom");
+                        } else if (roomProp.roomType === RoomType.ThreeVOne) {
+                            cc.director.loadScene("asymmetricroom");
+                        }
+                    }
+                }).catch((e) => {
+                    Dialog.open("提示", "加入房间失败" + Util.errorMessage(e));
+                    global.client.leaveRoom().then(() => {
+                        Util.printLog("leaveRoom success");
+                        global.roomType = RoomType.NULL;
+                    });
+                    cc.director.loadScene("hall");
+                });
+            }
+            else{
+                global.roomType = RoomType.NULL;
+                cc.director.loadScene("hall");
+            }
         }).catch((e) => {
+            Util.printLog('init err: ' + e);
             // 鉴权失败
             Dialog.open("提示", "鉴权失败，请重新刷新页面");
         });
     }
 
     initListener() {
-        this.button.node.on(cc.Node.EventType.TOUCH_START, () => this.goHall());
-    }
-
-    goHall() {
-        this.initSDK();
+        this.loginByGuestBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.initSDK(LoginType.Guest));
+        this.loginByAccountBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.initSDK(LoginType.Account));
     }
 
     onDisable() {
         // 关闭对话框
         Dialog.close();
     }
-
 }

@@ -26,19 +26,18 @@ public class Global {
     public static Player player = null;
     public static Group group = null;
     public static Room room = null;
-    public static RoomInfo[] roomInfos = null;
-
     public static string gameId = null;
-    public static string gameSecret = null;
     public static string matchCode = null;
+    public static int currentRoomFrameId = 0;
     public static int state = 0; // 帧同步状态 0停止帧同步，1开始帧同步
     public static int keyOperate = 1; // 按键操作限制 0限制操作，1允许操作
     public static string playerId = "";
     public static string matchRule = "0"; // 匹配规则 0-菜鸟区，1-高手区
-    public static int roomId = 0;
     public static Boolean isTeamMode = false;
     public static Boolean isAsymmetric = false;
     public static Boolean isOnlineMatch = false;
+    public static Boolean isReconnect = false;
+    public static int reconnectState = 3;
     public static string playerName = "";
     public static int bulletId = 0;
     public static int handleFrameRate = 3;
