@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,13 +14,10 @@
  *  limitations under the License.
  */
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using Com.Huawei.Game.Gobes;
-using Com.Huawei.Game.Gobes.Room;
 
 public class CreateRoom : MonoBehaviour
 {
@@ -42,7 +39,7 @@ public class CreateRoom : MonoBehaviour
         createRoomConfig.RoomName = roomName;
         createRoomConfig.RoomType = Global.matchRule;
         createRoomConfig.IsPrivate = isOpen;
-        createRoomConfig.MaxPlayers = 2;
+        createRoomConfig.MaxPlayers = 3;
         Dictionary<string, string> matchParams = new Dictionary<string, string>();
         matchParams.Add("matchRule", Global.matchRule);
         matchParams.Add("matchRule2", Global.matchRule);

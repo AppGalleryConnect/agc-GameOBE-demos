@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ using UnityEngine.UI;
 using Com.Huawei.Game.Gobes;
 using Com.Huawei.Game.Gobes.Utils;
 
-public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
+public class FrameSyncView : MonoBehaviour, ICallback
 {
     // 上、下、左、右、停止游戏按键
     public Button upButton = null;
@@ -35,8 +35,8 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     public Button stopFrameButton = null;
 
     public Button fireButton = null;
-    // 重开一局预制件
-    public ReopenGame reopenGame = null;
+    
+    public Button watcherLeaveButton = null;
 
     // 重开一局弹框
     public ReopenGameDialog reopenGameDialog = null;
@@ -53,12 +53,11 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     private static int[] arr4 = {90, 0, 180};
 
     // Start is called before the first frame update
-     void Start() {
-         this.InitView();
-        this.InitListener();
-        this.InitRobotSchedule();
-        this.InitSaveGameState();
-
+     void Start() {  
+        InitView();
+        InitListener();
+        InitRobotSchedule();
+        InitSaveGameState();
      }
 
      // 重现房间状态
@@ -89,9 +88,20 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     }
 
     void InitView() {
+        watcherLeaveButton.gameObject.SetActive(false);
         if (Global.Room == null || Global.Room.roomInfo == null ||
             Global.Room.roomInfo.OwnerId != Global.playerId) {
-            this.stopFrameButton.gameObject.SetActive(false);
+            stopFrameButton.gameObject.SetActive(false);
+        }
+        if (Global.isWatcher)
+        {
+            stopFrameButton.gameObject.SetActive(false);
+            upButton.gameObject.SetActive(false);
+            downButton.gameObject.SetActive(false);
+            leftButton.gameObject.SetActive(false);
+            rightButton.gameObject.SetActive(false);
+            fireButton.gameObject.SetActive(false);
+            watcherLeaveButton.gameObject.SetActive(true);
         }
         FrameSync.ReCalcFrameState();
     }
@@ -100,54 +110,64 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     void Update() {
         float dt = Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.A)) {
-            this.SendFrame(FrameSync.FrameSyncCmd.left);
+            SendFrame(FrameSync.FrameSyncCmd.left);
         }
         if (Input.GetKeyDown(KeyCode.D)) {
-            this.SendFrame(FrameSync.FrameSyncCmd.right);
+            SendFrame(FrameSync.FrameSyncCmd.right);
         }
         if (Input.GetKeyDown(KeyCode.W)) {
-            this.SendFrame(FrameSync.FrameSyncCmd.up);
+            SendFrame(FrameSync.FrameSyncCmd.up);
         }
         if (Input.GetKeyDown(KeyCode.S)) {
-            this.SendFrame(FrameSync.FrameSyncCmd.down);
+            SendFrame(FrameSync.FrameSyncCmd.down);
         }
         if (Input.GetKeyDown(KeyCode.K)) {
-            this.SendFireFrame(FrameSync.FrameSyncCmd.fire);
+            SendFireFrame(FrameSync.FrameSyncCmd.fire);
         }
 
         // 绘制玩家
-        this.gameCanvas.SetPlayers(FrameSync.frameSyncPlayerList);
+        gameCanvas.SetPlayers(FrameSync.frameSyncPlayerList);
         // 绘制云朵
-        this.gameCanvas.SetClouds(FrameSync.cloudsList, dt);
+        gameCanvas.SetClouds(FrameSync.cloudsList, dt);
         // 绘制子弹
-        this.gameCanvas.setBullets(FrameSync.frameSyncBulletList);
+        gameCanvas.setBullets(FrameSync.frameSyncBulletList);
         // 绘制圆圈
-        this.gameCanvas.SetCircle(GameView.circleDisplay);
+        gameCanvas.SetCircle(GameView.circleDisplay);
     }
 
     void InitListener() {
-        this.upButton.onClick.AddListener(() => {
-            this.SendFrame(FrameSync.FrameSyncCmd.up);
-        });
-        this.downButton.onClick.AddListener(() => {
-            this.SendFrame(FrameSync.FrameSyncCmd.down);
-        });
-        this.leftButton.onClick.AddListener(() => {
-            this.SendFrame(FrameSync.FrameSyncCmd.left);
-        });
-        this.rightButton.onClick.AddListener(() => {
-            this.SendFrame(FrameSync.FrameSyncCmd.right);
-        });
-        this.stopFrameButton.onClick.AddListener(() => {
-            this.StopGame();
-        });
-        this.fireButton.onClick.AddListener(() =>
+        if (!Global.isWatcher)
         {
-            this.SendFireFrame(FrameSync.FrameSyncCmd.fire);
-        });
+            upButton.onClick.AddListener(() => {
+                SendFrame(FrameSync.FrameSyncCmd.up);
+            });
+            downButton.onClick.AddListener(() => {
+                SendFrame(FrameSync.FrameSyncCmd.down);
+            });
+            leftButton.onClick.AddListener(() => {
+                SendFrame(FrameSync.FrameSyncCmd.left);
+            });
+            rightButton.onClick.AddListener(() => {
+                SendFrame(FrameSync.FrameSyncCmd.right);
+            });
+            stopFrameButton.onClick.AddListener(() => {
+                StopGame();
+            });
+            fireButton.onClick.AddListener(() =>
+            {
+                SendFireFrame(FrameSync.FrameSyncCmd.fire);
+            });
+        }
+        else
+        {
+            watcherLeaveButton.onClick.AddListener(() =>
+            {
+                WatcherLeaveRoom();
+            });
+        }
 
         if (Global.Room != null) {
-            Global.Room.OnStopSyncFrame = () => this.OnStopFrameSync();
+            Global.Room.OnStopSyncFrame = () => OnStopFrameSync();
             Global.Room.OnLeave = playerInfo => OnLeave(playerInfo);
             Global.Room.OnJoin = info => OnJoin(info);
         }
@@ -175,6 +195,10 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         {
             if (Global.room.roomInfo.Players[i].PlayerId == playerId)
             {
+                if (Global.room.roomInfo.Players[i].CustomPlayerProperties != null && Global.room.roomInfo.Players[i].CustomPlayerProperties.Equals("watcher"))
+                {
+                    break;
+                }
                 PlayerInfo playerInfo = Global.room.roomInfo.Players[i];
                 if (playerInfo.PlayerId == Global.Room.roomInfo.OwnerId)
                 {
@@ -207,7 +231,6 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
                     flag = true;
                 }
             }
-
         }
         return flag;
     }
@@ -483,62 +506,9 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         });
     }
 
-    void ReopenGame() {
-        // 调用SDK停止帧同步方法
-        ReopenGame doalog = Instantiate(reopenGame);
-        // 设置监听器
-        doalog.AddEventListener(this);
-        doalog.Open("提示", "游戏已结束，还想要重开一局吗？");
-    }
-
-    // 重开一局
-    public void Reopen() {
-        Global.room.Update(response => {
-            // 判断玩家是否还在房间内
-            RoomInfo room = response.RoomInfo;
-            Boolean inroom = IsInRoom(room);
-            if (response.RtnCode != 0 || !inroom) {
-                Debug.Log("退出房间");
-                UnityMainThread.wkr.AddJob(Route.GoHall);
-            }
-            if (inroom) {
-                Debug.Log("重开一局");
-                UnityMainThread.wkr.AddJob(Route.GoRoom);
-            }
-        });
-    }
-
-    // 退出房间
-    public void Exit() {
-        LeaveRoom();
-    }
-
-    // 用户是否还在房间中
-    Boolean IsInRoom(RoomInfo room) {
-        PlayerInfo[] players = room.Players;
-        if (players != null && players.Length > 0) {
-            foreach (PlayerInfo player in players) {
-                if (player.PlayerId == Global.playerId) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     // 按钮操作限制
     Boolean KeyOperateLimit() {
         return Global.keyOperate == 0;
-    }
-
-    private void Unready() {
-        Global.state = 0;
-        Global.player.UpdateCustomStatus(0, response => {
-            if (response.RtnCode != 0) {
-                Dialog dia = Instantiate(dialog);
-                dia.Open("提示", "取消准备失败" + Util.ErrorMessage(response));
-            }
-        });
     }
 
     void LeaveRoom() {
@@ -585,19 +555,25 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
     // ====================广播====================
     void OnStopFrameSync() {
         Debug.Log("停止帧同步");
-        // 取消准备
-        this.Unready();
         if (!Global.isTeamMode) {
             // 房间匹配模式下，需要重开一局
-            UnityMainThread.wkr.AddJob(() => {
-                this.ReopenGame();
-                FrameSync.frameSyncPlayerList.Clear();
-                FrameSync.frameSyncBulletList.Clear();
-            });
+            if (Global.isWatcher)
+            {
+                WatcherLeaveRoom();
+            }
+            else
+            {
+                UnityMainThread.wkr.AddJob(() => {
+                    FrameSync.frameSyncPlayerList.Clear();
+                    FrameSync.frameSyncBulletList.Clear();
+                    Debug.Log("GoGameEndView");
+                    Route.GoGameEndView();
+                }); 
+            }
         } else {
             FrameSync.frameSyncPlayerList.Clear();
             FrameSync.frameSyncBulletList.Clear();
-            this.LeaveRoom();
+            LeaveRoom();
         }
     }
 
@@ -606,18 +582,39 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
         Debug.Log("广播--离开房间");
         // 重新计算房间内的人员信息
         if (playerInfo.PlayerId != Global.playerId) {
-            this.ReCalPlayers(playerInfo);
+            ReCalPlayers(playerInfo);
             SaveGameState();
         } else {
             if (Global.isTeamMode && !Global.isOnlineMatch) {
                 // 组队匹配
+                Global.isReconnect = false;
                 UnityMainThread.wkr.AddJob(Route.GoTeam);
             } else {
                 // 在线匹配或者组房模式
+                Global.isReconnect = false;
                 UnityMainThread.wkr.AddJob(Route.GoHall);
             }
         }
     }
+    
+    void WatcherLeaveRoom() {
+        Global.client.LeaveRoom(res =>
+        {
+            if (res.RtnCode == 0)
+            {
+                Global.isWatcher = false;
+                UpdateCustomProperties("clear");
+                UnityMainThread.wkr.AddJob(Route.GoHall);
+                Debug.Log("离开观战房间成功clear");
+            }
+            else
+            {
+                Dialog dia = Instantiate(dialog);
+                dia.Open("提示", "离开观战房间失败" + Util.ErrorMessage(res));
+            }
+        });
+    }
+
 
     // 更新房间状态
     private void UpdateRoomProperties(UpdateRoomPropertiesConfig updateRoomProperties)
@@ -632,6 +629,17 @@ public class FrameSyncView : MonoBehaviour, ICallback, ReopenCallback
             {
                 Debug.Log($"savaState False {res.Msg}");
                 SDKDebugLogger.Log("savaState failed code={}",res.RtnCode);
+            }
+        });
+    }
+    // 更改玩家属性
+    private void UpdateCustomProperties(string updateCustomProperties)
+    {
+        Global.player.UpdateCustomProperties(updateCustomProperties, res =>
+        {
+            if (res.RtnCode == 0)
+            {
+                Debug.Log("UpdateCustomProperties Success");
             }
         });
     }

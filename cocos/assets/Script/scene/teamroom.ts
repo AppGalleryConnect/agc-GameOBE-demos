@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -90,7 +90,6 @@ export default class TeamRoom extends cc.Component {
         this.initView();
         this.initListener();
         this.initSchedule();
-        setRoomType(RoomType.TwoVTwo);
         if(global.room.isSyncing){
             cc.director.loadScene("game");
         }
@@ -311,26 +310,18 @@ export default class TeamRoom extends cc.Component {
     ready() {
         Util.printLog("准备");
         let ready = 1;
-        global.player.updateCustomStatus(ready).then(() => {
-            // 修改玩家自定义状态
-            this.initRoomView();
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Dialog.open("提示", "准备就绪失败" + Util.errorMessage(e));
-        });
+        global.player.updateCustomStatus(ready);
+        // 修改玩家自定义状态
+        this.initRoomView();
     }
 
     // 取消准备
     cancelReady() {
         Util.printLog("取消准备");
         let unready = 0;
-        global.player.updateCustomStatus(unready).then(() => {
-            // 修改玩家自定义状态
-            this.initRoomView();
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Dialog.open("提示", "取消准备失败" + Util.errorMessage(e));
-        });
+        global.player.updateCustomStatus(unready);
+        // 修改玩家自定义状态
+        this.initRoomView();
     }
 
     // 开始组队匹配游戏
@@ -382,6 +373,7 @@ export default class TeamRoom extends cc.Component {
 
     // ====================广播====================
     onJoining() {
+        setRoomType(RoomType.TwoVTwo);
         this.initRoomView()
     }
 

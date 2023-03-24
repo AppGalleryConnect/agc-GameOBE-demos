@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -46,10 +46,10 @@ export default class Hall extends cc.Component {
     @property(cc.Prefab)
     reloadingPrefab: cc.Prefab = null;
 
-    private lockSubmit: boolean = false;
-
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
+
+    private lockSubmit: boolean = false;
 
     start() {
         this.initView();
@@ -68,8 +68,8 @@ export default class Hall extends cc.Component {
      */
     initView() {
         // 设置加载Dialog
-        const relaodingNode = cc.instantiate(this.reloadingPrefab) as cc.Node;
-        relaodingNode.parent = this.node;
+        const reloadingNode = cc.instantiate(this.reloadingPrefab) as cc.Node;
+        reloadingNode.parent = this.node;
     }
 
     initListener() {
@@ -153,8 +153,7 @@ export default class Hall extends cc.Component {
      * 进行在线匹配
      */
     async onMatchPlayer() {
-        Util.printLog("在线匹配");
-        Util.printLog(global.playerId);
+        Util.printLog("玩家 " + global.playerId + " 进行在线匹配");
         let player = {
             playerId: global.playerId,
             matchParams: Util.getPlayerMatchParams()
@@ -163,61 +162,46 @@ export default class Hall extends cc.Component {
         Reloading.open("匹配中。。。", true, () => {
             this.cancelTeamMatch();
         });
-        // 需要根据是否非对称，选择对应的matchCode
-        let matchCode: string = "";
-        if (config.asymmetric) {
-            matchCode = config.asymmetricMatchCode;
-        } else {
-            matchCode = config.matchCode;
-        }
         // 调用GOBE的matchPlayer发起在线匹配
         global.client.matchPlayer(
             {
                 playerInfo: player,
                 teamInfo: Util.getTeamMatchParams(),
-                matchCode: matchCode
+                matchCode: config.asymmetric ? config.asymmetricMatchCode : config.matchCode
             }, {customPlayerStatus: 0, customPlayerProperties: Util.getCustomPlayerProperties()}).then((res) => {
             // 匹配开始
             global.isOnlineMatch = true;
             Util.printLog("在线匹配开始")
         }).catch((e) => {
             this.lockSubmit = false;
-            Util.printLog("在线匹配开始失败" + Util.errorMessage(e));
+            Util.printLog("在线匹配失败" + Util.errorMessage(e));
             Util.printLog(e.code);
             Reloading.close();
         });
     }
 
-
     onMatch(res){
         if (res.rtnCode === 0) {
-            Util.printLog('匹配成功:' + res.room);
+            Util.printLog('在线匹配成功:' + res.room);
             global.room = res.room;
             global.player = res.room.player;
-            if (config.asymmetric) {
-                // 非对称匹配
-                cc.director.loadScene("asymmetricroom");
-            } else {
-                // 对称匹配
-                cc.director.loadScene("teamroom");
-            }
+            cc.director.loadScene(config.asymmetric ? "asymmetricroom" : "teamroom");
             Reloading.close();
         } else {
             this.lockSubmit = false;
-            Util.printLog("匹配失败" + Util.errorMessage(res));
+            Util.printLog("在线匹配失败" + Util.errorMessage(res));
             Reloading.close();
         }
     }
-
 
     /**
      * 取消快速匹配
      */
     cancelTeamMatch() {
-        global.client.cancelMatch().then((res) => {
+        global.client.cancelMatch().then(() => {
             global.isOnlineMatch = false;
             Util.printLog('取消匹配成功')
-        }).catch((err) => {
+        }).catch(() => {
             Util.printLog('取消匹配失败')
         })
     }

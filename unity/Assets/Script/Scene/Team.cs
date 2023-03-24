@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-using System;
 using System.Collections.Generic;
 using Com.Huawei.Game.Gobes.Model;
 using UnityEngine;
@@ -95,8 +94,8 @@ public class Team : MonoBehaviour
             if (isOwner) {
                 GameObject loading = GameObject.Find("/loading(Clone)");
                 Destroy(loading);
-                this.enableMatchBtn.GetComponent<Button>().enabled = true;
-                this.enableMatchBtn.GetComponent<Button>().interactable = true;
+                enableMatchBtn.GetComponent<Button>().enabled = true;
+                enableMatchBtn.GetComponent<Button>().interactable = true;
             }
             else {
                 GameObject playerLoading = GameObject.Find("/loading2(Clone)");
@@ -118,9 +117,9 @@ public class Team : MonoBehaviour
         // 队伍code
         if (teamCodeEditBox != null)
         {
-            this.teamCodeEditBox.text = group.GroupId;
+            teamCodeEditBox.text = group.GroupId;
             // 当前玩家数
-            this.playerNum.text = group.Players == null ? "" : group.Players.Length.ToString();
+            playerNum.text = group.Players == null ? "" : group.Players.Length.ToString();
         }
         Debug.Log("队伍code：" + group.GroupId);
         PlayerInfo owner = null;
@@ -140,42 +139,42 @@ public class Team : MonoBehaviour
                 }
             }
         }
-        this.ownerName.text = owner == null ? "?" : owner.CustomPlayerProperties;
-        this.playerName.text = player == null ? "?" : player.CustomPlayerProperties;
+        ownerName.text = owner == null ? "?" : owner.CustomPlayerProperties;
+        playerName.text = player == null ? "?" : player.CustomPlayerProperties;
 
         // 根据是否队长显示按钮
         if (group.OwnerId == Global.playerId) { // 是队长
-            this.isOwner = true;
+            isOwner = true;
             // 显示“解散队伍”和“快速匹配”按钮
             if (enableMatchBtn == null)
             {
                 return;
             }
-            this.enableMatchBtn.gameObject.SetActive(true);
-            this.enableDismissBtn.gameObject.SetActive(true);
+            enableMatchBtn.gameObject.SetActive(true);
+            enableDismissBtn.gameObject.SetActive(true);
             // 隐藏“退出队伍”按钮
-            this.enableLeaveBtn.gameObject.SetActive(false);
+            enableLeaveBtn.gameObject.SetActive(false);
         } else {  // 不是队长
             // 隐藏“解散队伍”、“快速匹配”按钮
-            this.isOwner = false;
+            isOwner = false;
             if (enableMatchBtn == null)
             {
                 return;
             }
-            this.enableMatchBtn.gameObject.SetActive(false);
-            this.enableDismissBtn.gameObject.SetActive(false);
+            enableMatchBtn.gameObject.SetActive(false);
+            enableDismissBtn.gameObject.SetActive(false);
             // 显示“退出队伍”按钮
-            this.enableLeaveBtn.gameObject.SetActive(true);
+            enableLeaveBtn.gameObject.SetActive(true);
         }
 
     }
     void InitListener() {
         // 绑定”解散队伍“按钮
-        this.enableDismissBtn.onClick.AddListener(() => this.DismissGroup());
+        enableDismissBtn.onClick.AddListener(() => DismissGroup());
         // 绑定”退出队伍“按钮
-        this.enableLeaveBtn.onClick.AddListener(() => this.LeaveGroup());
+        enableLeaveBtn.onClick.AddListener(() => LeaveGroup());
         // 绑定“快速匹配”按钮
-        this.enableMatchBtn.onClick.AddListener(() => this.TeamMatch());
+        enableMatchBtn.onClick.AddListener(() => TeamMatch());
 
         // 监听心跳事件（demo根据不同的事件，对数据或界面更新）
         Global.group.OnDismiss = OnDismiss;
@@ -215,7 +214,7 @@ public class Team : MonoBehaviour
             // 是本人退出
             UnityMainThread.wkr.AddJob(Route.GoHall);
         } else {
-            this.UpdateGroup();
+            UpdateGroup();
         }
     }
 
@@ -267,23 +266,23 @@ public class Team : MonoBehaviour
     void OnJoin(ServerEvent serverEvent) {
         Debug.Log("加入队伍");
         //更新队伍信息
-        this.UpdateGroup();
+        UpdateGroup();
     }
 
     /**
     * 监听“组队匹配”--队友
     */
     void OnTeamMatch(ServerEvent serverEvent) {
-        Debug.Log("isOwner:" + this.isOwner);
+        Debug.Log("isOwner:" + isOwner);
         Debug.Log("心跳：匹配开始通知，serverEvent =" + serverEvent);
-        if (!this.isOwner && serverEvent.EventType == (int)ServerEventCode.MATCH_START) {
+        if (!isOwner && serverEvent.EventType == (int)ServerEventCode.MATCH_START) {
             // 如果不是队长就弹出匹配中
             UnityMainThread.wkr.AddJob(() => {
                 Reloading loading = Instantiate(Loading);
                 loading.Open("队员匹配中...");
             });
             PlayerInfo[] players = Global.group.groupInfo.Players;
-            this.TeamMatchGroup(players);
+            TeamMatchGroup(players);
         }
     }
 
@@ -291,17 +290,16 @@ public class Team : MonoBehaviour
      * 快速匹配--队长
      */
     void TeamMatch() {
-        GameObject loading = Instantiate(LoadingPre);
         PlayerInfo[] players = Global.group.groupInfo.Players;
-        this.enableMatchBtn.GetComponent<Button>().enabled = false;
-        this.enableMatchBtn.GetComponent<Button>().interactable = false;
+        enableMatchBtn.GetComponent<Button>().enabled = false;
+        enableMatchBtn.GetComponent<Button>().interactable = false;
         Global.group.GetGroupDetail(response => {
             if (response.RtnCode == 0)
             {
                 Global.group = new Group(response.GroupInfo);
                 players = response.GroupInfo.Players;
                 // 组队小队匹配
-                this.TeamMatchGroup(players);
+                TeamMatchGroup(players);
             } else {
                 Flag = false;
                 Debug.Log("快速匹配失败" + Util.ErrorMessage(response));
@@ -340,10 +338,8 @@ public class Team : MonoBehaviour
                     Flag = false;
                 }
                 // 匹配成功
-                else if ((int) ErrorCode.COMMON_OK == response.RtnCode || 
-                         (int) ErrorCode.PLAYER_MATCH_CANCEL_WHEN_SUCCESS == response.RtnCode) {
-                    Global.room = response.Room;
-                    UnityMainThread.wkr.AddJob(Route.GoTeamRoom);
+                else if ((int) ErrorCode.COMMON_OK == response.RtnCode) {
+                    Debug.Log("MatchGroup start");
                 }
                 else
                 // 匹配超时等其他匹配异常
@@ -353,6 +349,26 @@ public class Team : MonoBehaviour
               
                 }
             });
+            Global.client.OnMatch = response =>
+            {
+                if ((int) ErrorCode.PLAYER_MATCH_CANCELED == response.RtnCode) {
+                    // 匹配取消
+                    Flag = false;
+                }
+                // 匹配成功
+                else if ((int) ErrorCode.COMMON_OK == response.RtnCode || 
+                         (int) ErrorCode.PLAYER_MATCH_CANCEL_WHEN_SUCCESS == response.RtnCode) {
+                    Global.room = response.Room;
+                    UnityMainThread.wkr.AddJob(Route.GoTeamRoom);
+                }
+                else
+                    // 匹配超时等其他匹配异常
+                {
+                    Debug.Log("匹配失败：RtnCode = " + Util.ErrorMessage(response));
+                    Flag = false;
+              
+                }
+            };
         }  catch (SDKException e) {
             // SDK 报错
             Debug.Log("SDK 报错：" + Util.ExceptionMessage(e));

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,11 +14,8 @@
  *  limitations under the License.
  */
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using Com.Huawei.Game.Gobes;
 
 public struct CreatFaceParam
@@ -26,8 +23,11 @@ public struct CreatFaceParam
     public int index;
     public bool isOwner;
     public string name;
+    public bool loadingStatus;
+    public float progressValue;
     public int? status;
 }
+
 public class Face : MonoBehaviour
 {
     public Text owner;
@@ -35,6 +35,7 @@ public class Face : MonoBehaviour
     public Text statusText;
     public GameObject dismissBtn;
     public GameObject kickBtn;
+    public GameObject loadingProgress;
 
     public void RandomizeCharacter(CreatFaceParam param) {
         // 当前角色是否为房主
@@ -53,15 +54,25 @@ public class Face : MonoBehaviour
         }
 
         if (param.isOwner && roleIsOwner)
-        {            
+        {      
             dismissBtn.SetActive(true);
         }
         else if (param.isOwner && !roleIsOwner)
         {
             kickBtn.SetActive(true);
         }
-    }
 
+        if (param.loadingStatus)
+        {
+            dismissBtn.GetComponent<Button>().interactable = false;
+            kickBtn.GetComponent<Button>().interactable = false;
+            loadingProgress.SetActive(true);
+            Slider slider = loadingProgress.GetComponent<Slider>();
+            slider.value = param.progressValue;
+            slider.transform.Find("value").GetComponent<Text>().text = "进度" + param.progressValue * 100 + "%";
+        }
+    }
+    
     public void DismissRoom() {
         Debug.Log("解散房间");
         Global.client.DismissRoom(res =>

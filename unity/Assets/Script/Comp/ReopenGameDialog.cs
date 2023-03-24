@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class ReopenGameDialog : MonoBehaviour
@@ -37,48 +34,48 @@ public class ReopenGameDialog : MonoBehaviour
 
     void Start()
     {
-        this.InitListener();
+        InitListener();
     }
 
     void InitListener()
     {
-        this.BtnConfirm.onClick.AddListener(() => DialogConfirm());
-        this.BtnCancel.onClick.AddListener(() => DialogCancel());
+        BtnConfirm.onClick.AddListener(() => DialogConfirm());
+        BtnCancel.onClick.AddListener(() => DialogCancel());
     }
 
-    // ´ò¿ª¶Ô»°¿ò
+    // ï¿½ò¿ª¶Ô»ï¿½ï¿½ï¿½
     public void Open(String title, String content)
     {
-        this.Title.text = title;
-        this.Contetnt.text = content;
+        Title.text = title;
+        Contetnt.text = content;
     }
 
     public void DialogConfirm() {
-        // ´¦ÀíÈ·ÈÏ»Øµ÷ÊÂ¼þ
-        if (this.Callback != null) {
-            this.Callback.Confirm();
+        // ï¿½ï¿½ï¿½ï¿½È·ï¿½Ï»Øµï¿½ï¿½Â¼ï¿½
+        if (Callback != null) {
+            Callback.Confirm();
         }
-        // Ïú»Ùdialog
+        // ï¿½ï¿½ï¿½ï¿½dialog
         DialogDestroy();
     }
 
     public void DialogCancel() {
-        if (this.Callback != null) {
-            // ´¦ÀíÈ¡Ïû»Øµ÷ÊÂ¼þ
-            this.Callback.Cancel();
+        if (Callback != null) {
+            // ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½Øµï¿½ï¿½Â¼ï¿½
+            Callback.Cancel();
         }
-        // Ïú»Ùdialog
+        // ï¿½ï¿½ï¿½ï¿½dialog
         DialogDestroy();
     }
 
     void DialogDestroy()
     {
-        Destroy(this.gameObject);
+        Destroy(gameObject);
         GameObject bg = GameObject.Find("/bg(Clone)");
         Destroy(bg);
     }
 
-    // Ìí¼ÓÊÂ¼þ¼àÌý
+    // ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½
     public void AddEventListener(ICallback Callback) {
         this.Callback = Callback;
     }

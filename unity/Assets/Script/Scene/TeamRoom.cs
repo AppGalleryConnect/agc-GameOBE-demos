@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,17 +17,11 @@
 
 
 using Com.Huawei.Game.Gobes;
-using Com.Huawei.Game.Gobes.Room;
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using static Dialog;
-
 
 public class TeamRoom : MonoBehaviour
 {
@@ -122,11 +116,11 @@ public class TeamRoom : MonoBehaviour
         // 监听加入房间
         Global.Room.OnJoin = playerInfo => OnJoining();
         // 监听开始帧同步
-        Global.Room.OnStartSyncFrame = () => this.OnStartFrameSync();
+        Global.Room.OnStartSyncFrame = () => OnStartFrameSync();
         // 断线重连
-        Global.Room.OnDisconnect = playerInfo => this.OnDisconnect(playerInfo); // 断连监听
+        Global.Room.OnDisconnect = playerInfo => OnDisconnect(playerInfo); // 断连监听
         // 离开房间
-        Global.room.OnLeave = playerInfo => this.OnLeaving(playerInfo);
+        Global.room.OnLeave = playerInfo => OnLeaving(playerInfo);
     }
 
     public void SetRoomView() {
@@ -145,12 +139,11 @@ public class TeamRoom : MonoBehaviour
                 if (player.IsRobot == 1)
                 {
                     player.CustomPlayerStatus = 1;
-                    player.Status = 1;
                     player.CustomPlayerProperties = player.RobotName;
                 }
 
                 // 渲染在线玩家
-                if (player.Status == 1) {
+  
                     // 非房主
                     if (player.PlayerId != roomInfo.OwnerId)
                     {
@@ -162,9 +155,9 @@ public class TeamRoom : MonoBehaviour
                     }
                     else {
                         // 房主
-                        this.PlayerOwnerName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                        PlayerOwnerName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
                     }
-                }
+                
                 if (player.PlayerId == roomInfo.OwnerId)
                 {
                     redTeam = player.TeamId;
@@ -176,23 +169,23 @@ public class TeamRoom : MonoBehaviour
                 PlayerInfo player = (PlayerInfo)players[i];
                 if (player.TeamId == redTeam)
                 {
-                    this.SetRedPlayer(player);
+                    SetRedPlayer(player);
                 }
                 else
                 {
-                    this.SetYellowPlayer(player, playerNo);
+                    SetYellowPlayer(player, playerNo);
                     playerNo = 3;
                 }
             }
         }
         if (roomInfo.OwnerId != Global.playerId)
         {
-            this.StartBtn.gameObject.SetActive(false);
+            StartBtn.gameObject.SetActive(false);
         }
         else
         {
-            this.StartBtn.gameObject.SetActive(true);
-            this.StartBtn.interactable = allPlayersStatus;
+            StartBtn.gameObject.SetActive(true);
+            StartBtn.interactable = allPlayersStatus;
         }
     }
 
@@ -206,38 +199,27 @@ public class TeamRoom : MonoBehaviour
             case 1:
 
                 if (player.PlayerId == Global.playerId) {
-                    this.UnReadyBtnOne.gameObject.SetActive(isPlayerStatus);
-                    this.ReadyBtnOne.gameObject.SetActive(!isPlayerStatus);     
+                    UnReadyBtnOne.gameObject.SetActive(isPlayerStatus);
+                    ReadyBtnOne.gameObject.SetActive(!isPlayerStatus);     
                 }
-                this.PlayerOneStatus.text = isPlayerStatus ? "已准备" : "未准备";
+                PlayerOneStatus.text = isPlayerStatus ? "已准备" : "未准备";
                 if (player.IsRobot==1)
                 {
-                    this.PlayerOneName.fontSize = FontSize;
-                    this.PlayerOneName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                    PlayerOneName.fontSize = FontSize;
                 }
-                else
-                {
-                    this.PlayerOneName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
-                }
-
-
-
+                PlayerOneName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
                 break;
             case 3:
                 if (player.PlayerId == Global.playerId) {
-                    this.UnReadyBtnThree.gameObject.SetActive(isPlayerStatus);
-                    this.ReadyBtnThree.gameObject.SetActive(!isPlayerStatus);
+                    UnReadyBtnThree.gameObject.SetActive(isPlayerStatus);
+                    ReadyBtnThree.gameObject.SetActive(!isPlayerStatus);
                 }
-                this.PlayerThreeStatus.text = isPlayerStatus ? "已准备" : "未准备";
+                PlayerThreeStatus.text = isPlayerStatus ? "已准备" : "未准备";
                 if (player.IsRobot==1)
                 {
-                    this.PlayerThreeName.fontSize = FontSize;
-                    this.PlayerThreeName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+                    PlayerThreeName.fontSize = FontSize;
                 }
-                else
-                {
-                    this.PlayerThreeName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
-                }
+                PlayerThreeName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
                 break;
         }
     }
@@ -246,20 +228,15 @@ public class TeamRoom : MonoBehaviour
         bool isPlayerStatus = player.CustomPlayerStatus == 1 ? true : false;
         if (player.PlayerId == Global.playerId)
         {
-            this.UnReadyBtnTwo.gameObject.SetActive(isPlayerStatus);
-            this.ReadyBtnTwo.gameObject.SetActive(!isPlayerStatus);
+            UnReadyBtnTwo.gameObject.SetActive(isPlayerStatus);
+            ReadyBtnTwo.gameObject.SetActive(!isPlayerStatus);
         }
-        this.PlayerTwoStatus.text = isPlayerStatus ? "已准备" : "未准备";
+        PlayerTwoStatus.text = isPlayerStatus ? "已准备" : "未准备";
         if (player.IsRobot==1)
         {
-            this.PlayerTwoName.fontSize = FontSize;
-            this.PlayerTwoName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
+            PlayerTwoName.fontSize = FontSize;
         }
-        else
-        {
-            this.PlayerTwoName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
-        }
-
+        PlayerTwoName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
     }
 
     void ReConnectRoom() {
@@ -280,7 +257,6 @@ public class TeamRoom : MonoBehaviour
                 {
                     Debug.Log("玩家重连失败");
                     UnityMainThread.wkr.AddJob(() => {
-                        this.ReLogin();
                         Route.GoHall();
                         isReConnect = FrameSync.ReConnectState.reConnectionDefault;
                     });
@@ -293,7 +269,6 @@ public class TeamRoom : MonoBehaviour
                 // 重连失败
                 Debug.Log("重连失败");
                 UnityMainThread.wkr.AddJob(() => {
-                    this.ReLogin();
                     Route.GoHall();
                     isReConnect = FrameSync.ReConnectState.reConnectionDefault;
                 });
@@ -304,20 +279,20 @@ public class TeamRoom : MonoBehaviour
     }
 
     private void InitAllBtnActive() {
-        this.PlayerOneStatus.text = "";
-        this.PlayerTwoStatus.text = "";
-        this.PlayerThreeStatus.text = "";
-        this.ReadyBtnOne.gameObject.SetActive(false);
-        this.ReadyBtnTwo.gameObject.SetActive(false);
-        this.ReadyBtnThree.gameObject.SetActive(false);
-        this.UnReadyBtnOne.gameObject.SetActive(false);
-        this.UnReadyBtnTwo.gameObject.SetActive(false);
-        this.UnReadyBtnThree.gameObject.SetActive(false);
-        this.StartBtn.gameObject.SetActive(false);
-        this.PlayerOwnerName.text = "";
-        this.PlayerOneName.text = "";
-        this.PlayerTwoName.text = "";
-        this.PlayerThreeName.text = "";
+        PlayerOneStatus.text = "";
+        PlayerTwoStatus.text = "";
+        PlayerThreeStatus.text = "";
+        ReadyBtnOne.gameObject.SetActive(false);
+        ReadyBtnTwo.gameObject.SetActive(false);
+        ReadyBtnThree.gameObject.SetActive(false);
+        UnReadyBtnOne.gameObject.SetActive(false);
+        UnReadyBtnTwo.gameObject.SetActive(false);
+        UnReadyBtnThree.gameObject.SetActive(false);
+        StartBtn.gameObject.SetActive(false);
+        PlayerOwnerName.text = "";
+        PlayerOneName.text = "";
+        PlayerTwoName.text = "";
+        PlayerThreeName.text = "";
     }
 
     // 准备
@@ -329,7 +304,7 @@ public class TeamRoom : MonoBehaviour
         {
             if (response.RtnCode == 0) {
                 // 修改玩家自定义状态
-                this.InitRoomView();
+                InitRoomView();
             } else {
                 // 修改玩家自定义状态失败
                 Dialog.Open("提示", "准备就绪失败" + Util.ErrorMessage(response));
@@ -346,7 +321,7 @@ public class TeamRoom : MonoBehaviour
             if (response.RtnCode == 0)
             {
                 // 修改玩家自定义状态
-                this.InitRoomView();
+                InitRoomView();
             } else {
                 // 修改玩家自定义状态失败
                 Dialog.Open("提示", "取消准备失败" + Util.ErrorMessage(response));
@@ -404,15 +379,12 @@ public class TeamRoom : MonoBehaviour
             }
         });
     }
-
-    void ReLogin() { 
-        Global.client.Init(response => {});
-    }
+    
 
     // ====================广播====================
     void OnJoining()
     {
-        this.InitRoomView();
+        InitRoomView();
     }
 
     void OnLeaving(FramePlayerInfo playerInfo)
@@ -420,12 +392,11 @@ public class TeamRoom : MonoBehaviour
         Debug.Log("广播--离开房间");
         if (Global.playerId == playerInfo.PlayerId)
         {
-            this.ReLogin();
             UnityMainThread.wkr.AddJob(Route.GoHall);
         }
         else
         {
-            this.InitRoomView();
+            InitRoomView();
         }
     }
 

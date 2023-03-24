@@ -24,7 +24,9 @@
  *  2021.12.15-Changed method setDefaultFrameState
  *  2021.12.15-Changed method setPlayerCMD
  *  2021.12.15-Changed method calcFrame
- *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
+ *  2023.03.21-Changed method resetFrameSyncPlayerList
+ *  2023.03.21-Changed method roomMatch
+ *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 import {PlayerList, PlayerData} from "./PlayerList";
@@ -126,6 +128,9 @@ export function resetFrameSyncPlayerList() {
     frameSyncPlayerList.players = [];
     frameSyncPlayerInitList.players = [];
     global.room.players.forEach(player => {
+        if (player.customPlayerProperties=="watcher"){
+            return;
+        }
         if (global.room.ownerId !== player.playerId) {
             // 如果不是房主
             initPlayer(19, 0, player.playerId, 90, FrameSyncCmd.left, null, player.robotName);
@@ -143,6 +148,9 @@ function roomMatch(roomInfo) {
         roomProp = JSON.parse(roomInfo.customRoomProperties);
     }
     roomInfo.players.forEach((p) => {
+        if (p.customPlayerProperties == "watcher"){
+            return;
+        }
         if(roomProp.frameSyncPlayerArr) {
             let item = roomProp.frameSyncPlayerArr.find(item => item.playerId === p.playerId);
             initPlayer(item.x, item.y, item.playerId, item.rotation, item.cmd, null, item.robotName);

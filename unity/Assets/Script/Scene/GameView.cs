@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -61,8 +61,8 @@ public class GameView : MonoBehaviour {
         Screen.autorotateToPortraitUpsideDown = false;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         #endif
-        this.InitView();
-        this.InitListener();
+        InitView();
+        InitListener();
     }
 
     void Update() {
@@ -82,8 +82,8 @@ public class GameView : MonoBehaviour {
     void InitView() {
         RoomInfo roomInfo = Global.Room != null ? Global.Room.roomInfo : null;
         if (roomInfo != null) {
-            this.gameId.text = roomInfo.RoomId;
-            this.playerId.text = Global.playerId;
+            gameId.text = roomInfo.RoomId;
+            playerId.text = Global.playerId;
             if (roomInfo.Players != null && roomInfo.Players.Length != FrameSync.frameSyncPlayerList.Count) {
                 FrameSync.ReCalcFrameState();
             }
@@ -101,7 +101,7 @@ public class GameView : MonoBehaviour {
 
     private void OnRequestFrameError(BaseResponse response)
     {
-        if (response.RtnCode == (int)ErrorCode.SDK_REQUEST_FRAME_ERROR)
+        if (response.RtnCode == (int)ErrorCode.CLIENT_COMMON_ERR)
         {
             UnityMainThread.wkr.AddJob(() =>
             {
@@ -277,7 +277,6 @@ public class GameView : MonoBehaviour {
         }
     }
     
-
     // 解散房间
     void OnDismiss() {
         Debug.Log("广播--解散房间");
@@ -323,7 +322,6 @@ public class GameView : MonoBehaviour {
                 {
                     Debug.Log("重连失败");
                     UnityMainThread.wkr.AddJob(() => {
-                        this.ReLogin();
                         Route.GoHall();
                         FrameSync.frameSyncPlayerList.Clear();
                         isReConnect = FrameSync.ReConnectState.reConnectionDefault;
@@ -337,7 +335,6 @@ public class GameView : MonoBehaviour {
                 // 重连失败
                 Debug.Log("重连失败");
                 UnityMainThread.wkr.AddJob(() => {
-                    this.ReLogin();
                     Route.GoHall();
                     FrameSync.frameSyncPlayerList.Clear();
                     isReConnect = FrameSync.ReConnectState.reConnectionDefault;
@@ -348,9 +345,7 @@ public class GameView : MonoBehaviour {
         }
     }
 
-    void ReLogin() {
-        Global.client.Init(response => {});
-    }
+ 
 
     void OnDestroy() {
         FrameSync.ClearFrames();

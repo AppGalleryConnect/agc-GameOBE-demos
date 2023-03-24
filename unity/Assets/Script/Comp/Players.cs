@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,16 +33,16 @@ public class Players : MonoBehaviour {
     // 初始化玩家/红队/黄队的位置和方向
     public void InitPlayer(PlayerData<FrameSync.Player> player , string id)
     {
-        this.playerId = id;
+        playerId = id;
         if ((player.playerTeamId == null && id == Global.playerId) || (player.playerTeamId !=null && GameTeam.red.ToString().Equals(player.playerTeamId) )) {
-            this.icon1Sprite.SetActive(true);
-            this.icon2Sprite.SetActive(false);
-            this.icon1Sprite.transform.eulerAngles = new Vector3(0, 0, player.rotation);
+            icon1Sprite.SetActive(true);
+            icon2Sprite.SetActive(false);
+            icon1Sprite.transform.eulerAngles = new Vector3(0, 0, player.rotation);
         }
         if ((player.playerTeamId == null && id != Global.playerId) || (player.playerTeamId != null && GameTeam.yellow.ToString().Equals(player.playerTeamId))) {
-            this.icon1Sprite.SetActive(false);
-            this.icon2Sprite.SetActive(true);
-            this.icon2Sprite.transform.eulerAngles = new Vector3(0, 0, player.rotation);
+            icon1Sprite.SetActive(false);
+            icon2Sprite.SetActive(true);
+            icon2Sprite.transform.eulerAngles = new Vector3(0, 0, player.rotation);
         }
         if (id == Global.playerId) {
             id = "我";
@@ -50,15 +50,15 @@ public class Players : MonoBehaviour {
 
         if (player.isRobot == 1)
         {
-            this.label.text = player.robotName;
+            label.text = player.robotName;
         }
         else
         {
-            this.label.text = id;
+            label.text = id;
         }
 
 
-        this.gameObject.transform.position = new Vector3(player.x, player.y, 0);
+        gameObject.transform.position = new Vector3(player.x, player.y, 0);
     }
     
     /**

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 using Com.Huawei.Game.Gobes;
+using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
 
 public class RoomList : MonoBehaviour
@@ -32,6 +32,8 @@ public class RoomList : MonoBehaviour
 
     public GameObject message;
 
+    public Button QueryIdleRoomButton = null;
+
     private RoomInfo[] roomList;
 
     private const int limit = 20;
@@ -39,6 +41,12 @@ public class RoomList : MonoBehaviour
     void Start()
     {
         GetList();
+        InitListener();
+    }
+
+    private void InitListener()
+    {
+        QueryIdleRoomButton.onClick.AddListener(() => GetIdleList());
     }
 
     public void RenderList(GetAvailableRoomsBaseResponse res)
@@ -57,6 +65,7 @@ public class RoomList : MonoBehaviour
                 GameObject itemRoom = Instantiate(itemPrefb, content.transform);
                 itemRoom.SendMessage("RenderItem", room, SendMessageOptions.DontRequireReceiver);
             }
+
             Debug.Log($"获取房间列表成功,有{res.Count}条，当前从第{res.Offset}秒开始");
         }
         else
@@ -69,11 +78,21 @@ public class RoomList : MonoBehaviour
     public void JoinByCode()
     {
         string roomCode = codeInput.GetComponent<InputField>().text;
+        var customPlayerProperties = "";
         if (roomCode == null)
         {
             Debug.Log("请输入房间code");
             return;
         }
+
+        foreach (RoomInfo room in roomList)
+        {
+            if (roomCode == room.RoomCode)
+            {
+                customPlayerProperties = room.RoomStatus == (int) RoomStatus.SYNCING ? "watcher" : "";
+            }
+        }
+
         JoinRoomConfig joinRoomReq = new JoinRoomConfig()
         {
             RoomCode = roomCode
@@ -81,14 +100,14 @@ public class RoomList : MonoBehaviour
         PlayerConfig playerInfo = new PlayerConfig()
         {
             CustomPlayerStatus = 0,
-            CustomPlayerProperties = ""
+            CustomPlayerProperties = customPlayerProperties
         };
         try
         {
             Global.room = Global.client.JoinRoom(joinRoomReq, playerInfo, JoinRoomCallback);
             Global.player = Global.room._player;
         }
-        catch(SDKException e)
+        catch (SDKException e)
         {
             CreateMessage(Util.ExceptionMessage(e));
         }
@@ -97,11 +116,61 @@ public class RoomList : MonoBehaviour
     public void JoinById(string joinRoomId)
     {
         string roomId = idInput.GetComponent<InputField>().text;
-        if (string.IsNullOrEmpty(joinRoomId) && string.IsNullOrEmpty(roomId))
+        string realRoomId = string.IsNullOrEmpty(joinRoomId) ? roomId : joinRoomId;
+        if (string.IsNullOrEmpty(realRoomId))
         {
             CreateMessage("请输入房间号");
             return;
         }
+
+        var customPlayerProperties = "";
+        foreach (RoomInfo room in roomList)
+        {
+            if (realRoomId == room.RoomId)
+            {
+                customPlayerProperties = room.RoomStatus == (int) RoomStatus.SYNCING ? "watcher" : "";
+            }
+        }
+
+        JoinRoomConfig joimRoomReq = new JoinRoomConfig()
+        {
+            RoomId = realRoomId
+        };
+        PlayerConfig playerInfo = new PlayerConfig()
+        {
+            CustomPlayerStatus = 0,
+            CustomPlayerProperties = customPlayerProperties
+        };
+        try
+        {
+            Global.room = Global.client.JoinRoom(joimRoomReq, playerInfo, JoinRoomCallback);
+            Global.player = Global.room._player;
+        }
+        catch (SDKException e)
+        {
+            CreateMessage(Util.ExceptionMessage(e));
+        }
+    }
+
+    public void JoinByClick(string joinRoomId)
+    {
+        string roomId = idInput.GetComponent<InputField>().text;
+        string realRoomId = string.IsNullOrEmpty(joinRoomId) ? roomId : joinRoomId;
+        if (string.IsNullOrEmpty(realRoomId))
+        {
+            CreateMessage("请输入房间号");
+            return;
+        }
+
+        var customPlayerProperties = "";
+        foreach (RoomInfo room in roomList)
+        {
+            if (realRoomId == room.RoomId)
+            {
+                customPlayerProperties = room.RoomStatus == (int) RoomStatus.SYNCING ? "watcher" : "";
+            }
+        }
+
         JoinRoomConfig joimRoomReq = new JoinRoomConfig()
         {
             RoomId = string.IsNullOrEmpty(joinRoomId) ? roomId : joinRoomId
@@ -109,7 +178,7 @@ public class RoomList : MonoBehaviour
         PlayerConfig playerInfo = new PlayerConfig()
         {
             CustomPlayerStatus = 0,
-            CustomPlayerProperties = ""
+            CustomPlayerProperties = customPlayerProperties
         };
         try
         {
@@ -151,9 +220,22 @@ public class RoomList : MonoBehaviour
         {
             RoomType = Global.matchRule,
             Limit = limit,
+            Sync = true
         };
         Global.client.GetAvailableRooms(getRoomReq, RenderList);
     }
+
+    private void GetIdleList()
+    {
+        GetAvailableRoomsConfig getRoomReq = new GetAvailableRoomsConfig()
+        {
+            RoomType = Global.matchRule,
+            Limit = limit,
+            Sync = false
+        };
+        Global.client.GetAvailableRooms(getRoomReq, RenderList);
+    }
+
     private void CreateMessage(string tip)
     {
         GameObject MessageBox = Instantiate(message, content.transform.parent.parent);

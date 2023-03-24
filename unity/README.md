@@ -41,11 +41,11 @@ The following describes parameters in \Assets\Config.cs:
 
 | parameters | describes |
 |:----- |:-------|
-| gameId      |    Game ID, Identify a game. |
+| gameId      |  Game ID, Identify a game. |
 | openId      |  Distinguish between different users. |
 | clientId    |  Unique identifier used for authentication when integrating SDK. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
 | cliencsecret|  Key used for authentication when integrating SDK. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
-
+| gameSecret  |  Game Private Key used for Security hardening. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
 <a id="Sample_Code"></a>
 
 ## Sample Code

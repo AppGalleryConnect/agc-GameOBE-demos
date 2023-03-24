@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,10 +37,19 @@ export default class RoomList extends cc.Component {
     entryRoomByCodeBtn: cc.Button = null;
 
     @property(cc.Button)
+    freshRoomListBtn: cc.Button = null;
+
+    @property(cc.Button)
+    freshIdleRoomListBtn: cc.Button = null;
+
+    @property(cc.Button)
     quitBtn: cc.Button = null;
 
     @property(cc.EditBox)
     entryRoomByCodeEdit: cc.EditBox = null;
+
+    @property(cc.EditBox)
+    entryRoomStatusEdit: cc.EditBox = null;
 
     @property(cc.Layout)
     layOut: cc.Layout = null;
@@ -54,7 +63,7 @@ export default class RoomList extends cc.Component {
         this.initView();
         this.queryData();
         this.initListener();
-        this.initSchedule();
+        //this.initSchedule();
     }
 
     initView() {
@@ -70,6 +79,8 @@ export default class RoomList extends cc.Component {
     initListener() {
         this.entryRoomBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.joinRoom());
         this.entryRoomByCodeBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.joinRoom());
+        this.freshRoomListBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.queryData());
+        this.freshIdleRoomListBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.queryIdleData());
         this.quitBtn.node.on(cc.Node.EventType.TOUCH_END, () => cc.director.loadScene("hall"));
     }
 
@@ -79,6 +90,8 @@ export default class RoomList extends cc.Component {
         let roomId = this.entryRoomEdit.string;
         Util.printLog('房间Code' + this.entryRoomByCodeEdit.string);
         let roomCode = this.entryRoomByCodeEdit.string;
+        Util.printLog('房间状态' + this.entryRoomStatusEdit.string);
+        let roomStatus = this.entryRoomStatusEdit.string;
 
         if (roomId) {
             target = roomId;
@@ -87,11 +100,11 @@ export default class RoomList extends cc.Component {
         } else {
             return Util.printLog(`请输入正确的房间ID或房间Code`);
         }
-
+        let customPlayerProperties = roomStatus == "1" ? "watcher" : "";
         this.lockSubmit = true;
         Util.printLog(`正在加入房间，房间ID或房间Code：${target}`);
         await global.client.joinRoom(target,
-            {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
+            {customPlayerStatus: 0, customPlayerProperties: customPlayerProperties}).then((room) => {
             Util.printLog("加入房间成功");
             global.room = room;
             global.player = room.player;
@@ -110,7 +123,26 @@ export default class RoomList extends cc.Component {
 
     queryData() {
         global.client.getAvailableRooms({
-            roomType: global.matchRule
+            roomType: global.matchRule,
+            sync:true
+        }).then((infos) => {
+            Util.printLog("查询房间列表成功");
+            global.roomInfos = infos.rooms;
+            this.freshList();
+            this.changeList()
+        }).catch((e) => {
+            // 查询房间列表失败
+            Util.printLog("查询房间列表失败" + Util.errorMessage(e));
+            global.roomInfos = []
+            this.freshList();
+            this.changeList()
+        })
+    }
+
+    queryIdleData() {
+        global.client.getAvailableRooms({
+            roomType: global.matchRule,
+            sync:false
         }).then((infos) => {
             Util.printLog("查询房间列表成功");
             global.roomInfos = infos.rooms;
@@ -138,15 +170,16 @@ export default class RoomList extends cc.Component {
     freshEdit(data: RoomInfo) {
         this.entryRoomEdit.string = data.roomId;
         this.entryRoomByCodeEdit.string = data.roomCode;
+        this.entryRoomStatusEdit.string = data.roomStatus.toString();
     }
 
     changeList() {
         if (global.roomInfos) {
             const nums: number = global.roomInfos.length;
             if (nums <= 10) {
-                this.listContent.height = 480
+                this.listContent.height = 720
             } else {
-                this.listContent.height = 480 + (nums - 10) * 47
+                this.listContent.height = 720 + (nums - 10) * 47
             }
         }
     }

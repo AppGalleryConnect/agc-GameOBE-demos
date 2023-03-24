@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Com.Huawei.Game.Gobes.Model;
@@ -66,12 +65,7 @@ public class FrameSync {
         TEAMROOM = 1,
         ASYCROOM = 2
     }
-
-    public enum CollideTagEnum
-    {
-        
-    }
-
+    
     // 玩家
     public class Player {
         public FrameSyncCmd cmd { get; set; }
@@ -218,6 +212,10 @@ public class FrameSync {
         {
             foreach (PlayerInfo player in roomInfo.Players)
             {
+                if (player.CustomPlayerProperties != null && player.CustomPlayerProperties.Equals("watcher"))
+                {
+                    continue;
+                }
                 if (redTeamId == player.TeamId)
                 {
                     // 初始化红队的位置、方向
@@ -241,6 +239,10 @@ public class FrameSync {
             // 初始化每个玩家的位置、方向
             foreach (PlayerInfo player in roomInfo.Players)
             {
+                if (player.CustomPlayerProperties != null && player.CustomPlayerProperties.Equals("watcher"))
+                {
+                    continue;
+                }
                 if (roomInfo.OwnerId != null && roomInfo.OwnerId != player.PlayerId)
                 {
                     // 如果不是房主
@@ -406,6 +408,4 @@ public class FrameSync {
         GameObject circle = GameObject.Find("circle_special(Clone)").gameObject;
         circle.GetComponent<Renderer>().material.color = Color.red;
     }
-
-
 }

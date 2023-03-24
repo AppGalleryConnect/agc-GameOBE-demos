@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  *  limitations under the License.
  */
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,8 +26,7 @@ public class AsymmetricMatchSetting : MonoBehaviour
     public InputField WeaponInput;
     public Toggle SinglePlayerToggle;
     public Button ConfirmBtn;
-
-
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -39,7 +36,7 @@ public class AsymmetricMatchSetting : MonoBehaviour
 
     private void InitListener()
     {
-        this.ConfirmBtn.onClick.AddListener(() => OnclickConfirmBtn());
+        ConfirmBtn.onClick.AddListener(() => OnclickConfirmBtn());
     }
     public void OnclickConfirmBtn() {
         Global.level = LevelInput.text != "" ? LevelInput.text : "";
@@ -48,7 +45,6 @@ public class AsymmetricMatchSetting : MonoBehaviour
         Global.skill = SkillInput.text != "" ? SkillInput.text : "";
         Global.weapon = WeaponInput.text != "" ? WeaponInput.text : "";
         Global.teamNumber = SinglePlayerToggle.isOn ? "1" : "11";
-
         Route.GoHall();
     }
 }

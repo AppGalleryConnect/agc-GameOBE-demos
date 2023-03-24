@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@ public class Bullet : MonoBehaviour
     public string playerId = "";
     
     public void initBullet(int x,int y,string PlayerId,int BullectId) {
-        this.playerId = PlayerId;
-        this.bullectId = BullectId;
+        playerId = PlayerId;
+        bullectId = BullectId;
         // 如果宽高超过边界，销毁子弹
         if(x > FrameSync._maxX || x < FrameSync._minX || y > FrameSync._maxY || y < FrameSync._minY){
             // 子弹数据销毁
             FrameSync.frameSyncBulletList = FrameSync.frameSyncBulletList.Where(item => !(item.playerId.Equals(PlayerId) && item.bulletId == BullectId)).ToList();
         }else{
-            this.gameObject.transform.position = new Vector3(x, y, 0);
+            gameObject.transform.position = new Vector3(x, y, 0);
         }
 
     }

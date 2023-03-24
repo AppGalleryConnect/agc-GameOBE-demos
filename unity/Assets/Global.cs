@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ public class Global {
     public static int reconnectState = 3;
     public static string playerName = "";
     public static int bulletId = 0;
+    public static int _retryCount = 0;
     public static int handleFrameRate = 3;
     public static string level = null;
     public static string age = null;
@@ -47,6 +48,8 @@ public class Global {
     public static string skill = null;
     public static string weapon = null;
     public static string teamNumber = null;
+    public static Boolean isWatcher = false;
+    public static int roomType = 0;
 
 
     internal static Room Room { get => room; set => room = value; }

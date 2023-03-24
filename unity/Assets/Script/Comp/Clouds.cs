@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 using UnityEngine;
-using static FrameSync;
 
 public class Clouds : MonoBehaviour {
 
@@ -23,7 +22,7 @@ public class Clouds : MonoBehaviour {
 
     // 云朵位置
     public void InitCloud(float x, float y) {
-        this.gameObject.transform.position = new Vector3(x, y, 0);
+        gameObject.transform.position = new Vector3(x, y, 0);
     }
 
 }

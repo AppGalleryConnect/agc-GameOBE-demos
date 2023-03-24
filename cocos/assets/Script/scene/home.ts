@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -47,6 +47,11 @@ export default class Home extends cc.Component {
         dialogNode.parent = this.node;
     }
 
+    initListener() {
+        this.loginByGuestBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.initSDK(LoginType.Guest));
+        this.loginByAccountBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.initSDK(LoginType.Account));
+    }
+
     initSDK(loginType: LoginType) {
         if (Util.isInited()) {
             return Util.printLog("SDK 已经初始化，无需重复操作");
@@ -64,15 +69,23 @@ export default class Home extends cc.Component {
                 cerPath: cc.url.raw('resources/endpoint-cert.cer'),
             })
         }
-        const client = new window.GOBE.Client(clientConfig);
+        global.client = new window.GOBE.Client(clientConfig);
+        global.client.onInitResult((resultCode) => this.onInitResult(resultCode));
         Util.printLog("正在初始化 SDK");
-        client.init().then(() => {
-            // 鉴权成功
-            Util.printLog("鉴权成功");
-            global.playerId = client.playerId;
-            global.client = client;
+        global.client.init().catch((e) => {
+            Util.printLog('init err: ' + e);
+            // 鉴权失败
+            Dialog.open("提示", "初始化失败，请重新刷新页面");
+        });
+    }
+
+    // 初始化监听回调
+    onInitResult(resultCode: number) {
+        if(resultCode === window.GOBE.ErrorCode.COMMON_OK){
+            global.playerId = global.client.playerId;
             // demo生成昵称保存到global
             global.playerName = Util.mockPlayerName();
+            Util.printLog('init success');
             if(global.client.lastRoomId){
                 Util.printLog('房间Id' + global.client.lastRoomId);
                 global.client.joinRoom(global.client.lastRoomId,
@@ -80,8 +93,7 @@ export default class Home extends cc.Component {
                     Util.printLog("加入房间成功");
                     global.room = room;
                     global.player = room.player;
-                    Util.printLog('玩家id ：' + global.player.playerId);
-                    Util.printLog('房主id ：' + global.room.ownerId);
+                    Util.printLog('玩家id ：' + global.player.playerId + '  房主id ：' + global.room.ownerId);
                     // 重置帧id
                     let roomProp = JSON.parse(global.room.customRoomProperties);
                     if(roomProp.curFrameId) {
@@ -98,6 +110,7 @@ export default class Home extends cc.Component {
                         }
                     }
                 }).catch((e) => {
+                    Util.printLog('加入房间失败，roomId： ' + global.client.lastRoomId);
                     Dialog.open("提示", "加入房间失败" + Util.errorMessage(e));
                     global.client.leaveRoom().then(() => {
                         Util.printLog("leaveRoom success");
@@ -110,16 +123,9 @@ export default class Home extends cc.Component {
                 global.roomType = RoomType.NULL;
                 cc.director.loadScene("hall");
             }
-        }).catch((e) => {
-            Util.printLog('init err: ' + e);
-            // 鉴权失败
-            Dialog.open("提示", "鉴权失败，请重新刷新页面");
-        });
-    }
-
-    initListener() {
-        this.loginByGuestBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.initSDK(LoginType.Guest));
-        this.loginByAccountBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.initSDK(LoginType.Account));
+        } else {
+            Util.printLog('init failed');
+        }
     }
 
     onDisable() {

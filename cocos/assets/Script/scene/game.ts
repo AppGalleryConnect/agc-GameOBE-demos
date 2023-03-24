@@ -24,7 +24,15 @@
  *  2021.12.15-Changed method initListener
  *  2021.12.15-Changed method sendFrame
  *  2021.12.15-Changed method setRoomView
- *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
+ *  2023.03.21-Changed method initView
+ *  2023.03.21-Changed method initListener
+ *  2023.03.21-Changed method syncRoomProp
+ *  2023.03.21-Add method stopFrameSync
+ *  2023.03.21-Add method onConnect
+ *  2023.03.21-Changed method onStopFrameSync
+ *  2023.03.21-Changed method leaveRoom
+ *  2023.03.21-Changed method reConnect
+ *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 import global from "../../global";
@@ -49,6 +57,7 @@ import {CloudData} from "../function/CloudList";
 import GameCanvas from "../comp/GameCanvas";
 import config from "../../config";
 import {RoomType} from "../commonValue";
+import {sleep} from "../function/Common";
 
 const {ccclass, property} = cc._decorator;
 let framesId = 0;
@@ -61,9 +70,6 @@ export default class Game extends cc.Component {
 
     @property(cc.Label)
     playerIdLabel: cc.Label = null;
-
-    @property(cc.Prefab)
-    reopenGamePrefab: cc.Prefab = null;
 
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
@@ -109,10 +115,9 @@ export default class Game extends cc.Component {
         this.frameSyncView.onRightButtonClick = () => this.sendFrame(FrameSyncCmd.right);
         this.frameSyncView.onStopFrameButtonClick = () => this.stopGame();
         this.frameSyncView.onFireButtonClick = () => this.sendFireFrame();
+        this.frameSyncView.onLeaveButtonClick= () => this.watcherLeaveRoom();
         this.frameSyncView.setEnableButtons(global.playerId === global.room.ownerId);
-        // 设置重开一局游戏弹框
-        const reopenGameNode = cc.instantiate(this.reopenGamePrefab) as cc.Node;
-        reopenGameNode.parent = this.node;
+        this.frameSyncView.setWatcherButtons(!global.isWatcher);
         // 设置dialog
         const dialogNode = cc.instantiate(this.dialogPrefab) as cc.Node;
         dialogNode.parent = this.node;
@@ -128,7 +133,10 @@ export default class Game extends cc.Component {
             global.room.onStopFrameSync(() => this.onStopFrameSync());
             global.room.onDismiss(() => this.onDismiss());
             global.room.onLeave((playerInfo) => this.onLeave(playerInfo));
-            global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
+            // 上线通知监听
+            global.room.onConnect((playerInfo: PlayerInfo) => this.onConnect(playerInfo));
+            // 断线通知监听
+            global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo));
             global.room.onJoin((playerInfo: PlayerInfo) => this.onJoin(playerInfo)); // 进行补帧
             global.room.onRequestFrameError((err) => this.onRequestFrameError(err));// 补帧失败回调
         }
@@ -187,11 +195,7 @@ export default class Game extends cc.Component {
             curFrameId: global.curHandleFrameId
         }
 
-        global.room.updateRoomProperties({
-            customRoomProperties: JSON.stringify(roomProperties)
-        }).then(() => {
-            Util.printLog('owner updateRoomProperties success');
-        })
+        global.room.updateRoomProperties({customRoomProperties: JSON.stringify(roomProperties)});
     }
 
     initRobotSchedule() {
@@ -308,36 +312,10 @@ export default class Game extends cc.Component {
             if (this.syncRoomPropTask) {
                 clearInterval(this.syncRoomPropTask);
             }
-            // 停止帧同步成功
-            Util.printLog("停止帧同步成功");
-            if (!global.isTeamMode) {
-                // 房间匹配模式下，需要重开一局
-                this.reopenGame();
-            }
         }).catch((e) => {
             // 停止帧同步失败
             Util.printLog("停止帧同步失败");
             Dialog.open("提示", "停止帧同步失败" + Util.errorMessage(e));
-        });
-    }
-
-    // 重开一局
-    reopenGame() {
-        ReopenGame.open("提示", "游戏已结束，还想要重开一局吗？", () => {
-            global.room.update().then((room) => {
-                if (this.isInRoom(room)) {
-                    cc.director.loadScene("room");
-                } else {
-                    global.roomType = RoomType.NULL;
-                    cc.director.loadScene("hall");
-                }
-            }).catch((e) => {
-                Util.printLog("update err: " + e);
-                cc.director.loadScene("hall");
-            });
-        }, () => {
-            this.leaveRoom();
-            cc.director.loadScene("hall");
         });
     }
 
@@ -436,6 +414,15 @@ export default class Game extends cc.Component {
         // 房间人数变化，重新计算帧
         if (roomInfo.players.length !== frameSyncPlayerList.players.length) {
             reCalcFrameState();
+        }
+    }
+
+    onConnect(playerInfo: PlayerInfo) {
+        if (playerInfo.playerId === global.playerId) {
+            global.isConnected = true;
+            Util.printLog("玩家在线了");
+        } else {
+            Util.printLog("房间内其他玩家上线了，playerId:" + playerInfo.playerId);
         }
     }
 
@@ -563,22 +550,27 @@ export default class Game extends cc.Component {
 
     onStopFrameSync() {
         Util.printLog("SDK广播--停止帧同步");
-        this.unready();
         // 清空帧数据
         global.unhandleFrames = [];
         // 清空roomProperties
         if(global.room.ownerId === global.client.playerId) {
-            global.room.updateRoomProperties({
-                customRoomProperties: ''
-            }).then(() => {
-                Util.printLog('owner reset roomProperties success');
-            })
+            global.room.updateRoomProperties({customRoomProperties: ''});
         }
         global.curHandleFrameId = 0;
         frameSyncBulletList.bullets = [];
         resetFrameSyncPlayerList();
         if (!global.isTeamMode) {
-            this.reopenGame();
+            // 上报结算结果0或1
+            if (global.isWatcher){
+                this.watcherLeaveRoom();
+            }else{
+                global.client.room.sendToServer(JSON.stringify({
+                    playerId: global.client.playerId,
+                    type: "GameEnd",
+                    value: Math.random() > 0.5 ? 1 : 0
+                }));
+                cc.director.loadScene("gameend");
+            }
         } else {
             this.leaveRoom();
             if (global.isOnlineMatch) {
@@ -608,12 +600,7 @@ export default class Game extends cc.Component {
     }
 
     private unready() {
-        global.player.updateCustomStatus(0).then(() => {
-            Util.printLog("修改玩家自定义状态成功");
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Util.printLog("取消准备失败,err: " + e);
-        });
+        global.player.updateCustomStatus(0);
     }
 
     private leaveRoom() {
@@ -622,6 +609,20 @@ export default class Game extends cc.Component {
             // 退出房间成功
             Util.printLog("退出房间成功");
             global.roomType = RoomType.NULL;
+        }).catch((e) => {
+            // 退出房间失败
+            Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
+        });
+    }
+
+    private watcherLeaveRoom() {
+        Util.printLog(`正在退出观战房间`);
+        global.client.leaveRoom().then(() => {
+            Util.printLog("退出观战房间成功");
+            global.isWatcher = false;
+            global.roomType = RoomType.NULL;
+            global.player.updateCustomProperties("clear");
+            cc.director.loadScene("hall");
         }).catch((e) => {
             // 退出房间失败
             Dialog.open("提示", "退出房间失败" + Util.errorMessage(e));
@@ -660,24 +661,20 @@ export default class Game extends cc.Component {
         }
     }
 
-    reConnect() {
+    async reConnect() {
         if (global.isTeamMode) {
             cc.director.loadScene("hall");
         } else {
             // 没有超过重连时间，就进行重连操作
-            global.room.reconnect().then(() => {
-                Util.printLog("玩家重连成功");
-            }).catch((error) => {
-                if (!error.code) {
-                    // 加入房间请求不通就继续重连
-                    this.reConnect();
-                    return;
-                }
-                if (error.code != 0) {
-                    // 无法加入房间需要退出到大厅
-                    cc.director.loadScene("hall");
-                }
-            });
+            while (!global.isConnected){
+                // 1秒重连一次，防止并发过大游戏直接卡死
+                await sleep(1000).then();
+                global.room.reconnect().then(() => {
+                    Util.printLog("reconnect success");
+                }).catch((error) => {
+                    Util.printLog("reconnect err");
+                });
+            }
         }
     }
 

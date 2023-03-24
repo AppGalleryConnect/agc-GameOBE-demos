@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 import global from "../../global";
 import * as Util from "../../util";
-import {PlayerInfo, UpdateCustomStatusResponse, UpdateCustomPropertiesResponse, RoomInfo} from "../../GOBE/GOBE";
+import { PlayerInfo, UpdateCustomStatusResponse, UpdateCustomPropertiesResponse, RoomInfo, RecvFromServerInfo } from "../../GOBE/GOBE";
 import Dialog from "../comp/Dialog";
 import {RoomType} from "../commonValue";
-import {setRoomType} from "../function/Common";
+import {setRoomType, sleep} from "../function/Common";
+import Button = cc.Button;
+import Label = cc.Label;
 
 const {ccclass, property} = cc._decorator;
 
@@ -33,10 +35,7 @@ export default class Room extends cc.Component {
     roomIdEditBox: cc.EditBox = null;
 
     @property(cc.Node)
-    enableStartGameBtn: cc.Node = null;
-
-    @property(cc.Node)
-    disableStartGameBtn: cc.Node = null;
+    startBtn: cc.Node = null;
 
     @property(cc.Node)
     enableReadyBtn: cc.Node = null;
@@ -45,29 +44,23 @@ export default class Room extends cc.Component {
     cancelReadyBtn: cc.Node = null;
 
     @property(cc.Node)
-    enableLeaveBtn: cc.Node = null;
+    leaveBtn: cc.Node = null;
 
     //解散房间
     @property(cc.Node)
-    enableDismissBtn: cc.Node = null;
+    dismissBtn: cc.Node = null;
 
     @property(cc.Node)
-    disableLeaveBtn: cc.Node = null;
+    owner: cc.Node = null;
 
-    @property(cc.Label)
-    owner_id: cc.Label = null;
-
-    @property(cc.Label)
-    player_id: cc.Label = null;
-
-    @property(cc.Label)
-    player_ready_status: cc.Label = null;
+    @property(cc.Node)
+    commonPlayer: cc.Node = null;
 
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
 
     @property(cc.Node)
-    kickPersonBtn: cc.Node = null;
+    kickBtn: cc.Node = null;
 
     @property(cc.Node)
     sendBtn: cc.Node = null;
@@ -75,16 +68,27 @@ export default class Room extends cc.Component {
     @property(cc.EditBox)
     chatBox: cc.EditBox = null;
 
-    @property(cc.Label)
-    chatContent: cc.Label = null;
+    @property(Label)
+    chatContent: Label = null;
+
+    @property(cc.Node)
+    loadingTip: cc.Node = null;
+
+    // 实际的房主的item节点
+    ownerItem = null;
+
+    // 实际的普通玩家的item节点
+    playerItem = null;
+
+    // 是否是加载状态
+    isLoadingStatus = false;
 
     start() {
         this.initView();
         this.initListener();
         this.initSchedule();
-        setRoomType(RoomType.OneVOne);
         if(global.room.isSyncing){
-            cc.director.loadScene("game");
+            this.onDirectStartFrameSync();
         }
     }
 
@@ -97,16 +101,22 @@ export default class Room extends cc.Component {
         // 设置对话框
         const dialogNode = cc.instantiate(this.dialogPrefab) as cc.Node;
         dialogNode.parent = this.node;
+        cc.resources.load("prefab/player_item", (err, prefab: cc.Prefab) => {
+            if (err == null && prefab) {
+                this.ownerItem = cc.instantiate(prefab);
+                this.owner.addChild(this.ownerItem);
+                this.playerItem = cc.instantiate(prefab);
+                this.commonPlayer.addChild(this.playerItem);
+            }
+            else {
+                console.error("load resources err :" + err);
+            }
+        });
     }
 
     initListener() {
-        this.enableLeaveBtn.on(cc.Node.EventType.TOUCH_START, () => this.leaveRoom());
-        this.enableStartGameBtn.on(cc.Node.EventType.TOUCH_START, () => this.startGame());
         this.enableReadyBtn.on(cc.Node.EventType.TOUCH_START, () => this.ready());
         this.cancelReadyBtn.on(cc.Node.EventType.TOUCH_START, () => this.cancelReady());
-        this.kickPersonBtn.on(cc.Node.EventType.TOUCH_START, () => this.kickPerson());
-        //绑定“解散房间”事件
-        this.enableDismissBtn.on(cc.Node.EventType.TOUCH_START, () => this.dismissRoom());
         this.sendBtn.on(cc.Node.EventType.TOUCH_START, () => this.sendContent());
         global.room.onJoin(() => this.onJoining());
         global.room.onLeave((playerInfo) => this.onLeaving(playerInfo));
@@ -115,8 +125,62 @@ export default class Room extends cc.Component {
         global.room.onUpdateCustomProperties((playerInfo: UpdateCustomPropertiesResponse) => this.onUpdateCustomProperties(playerInfo))
         global.room.onRoomPropertiesChange((roomInfo: RoomInfo) => this.onRoomPropertiesChange(roomInfo))
         global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
+        global.room.onConnect((playerInfo) => this.onConnect(playerInfo));
         // SDK 开始帧同步
         global.room.onStartFrameSync(() => this.onStartFrameSync())
+        global.room.onRecvFromServer((receiveFromServerInfo) => this.onReceiveFromGameServer(receiveFromServerInfo));
+    }
+
+    // 设置开始按钮
+    setStartBtn(active, enable = false){
+        this.startBtn.active = active;
+        this.startBtn.getComponent(Button).interactable = enable;
+        if(enable){
+            this.startBtn.off(cc.Node.EventType.TOUCH_START);
+            this.startBtn.on(cc.Node.EventType.TOUCH_START, () => this.startGame());
+        }
+        else{
+            this.startBtn.off(cc.Node.EventType.TOUCH_START);
+        }
+    }
+
+    // 设置离开按钮
+    setLeaveBtn(active, enable){
+        this.leaveBtn.active = active;
+        this.leaveBtn.getComponent(Button).interactable = enable;
+        if(enable){
+            this.leaveBtn.off(cc.Node.EventType.TOUCH_START);
+            this.leaveBtn.on(cc.Node.EventType.TOUCH_START, () => this.leaveRoom());
+        }
+        else{
+            this.leaveBtn.off(cc.Node.EventType.TOUCH_START);
+        }
+    }
+
+    // 设置踢人按钮
+    setKickBtn(active, enable = false){
+        this.kickBtn.active = active;
+        this.kickBtn.getComponent(Button).interactable = enable;
+        if(enable){
+            this.kickBtn.off(cc.Node.EventType.TOUCH_START);
+            this.kickBtn.on(cc.Node.EventType.TOUCH_START, () => this.kickPerson());
+        }
+        else{
+            this.kickBtn.off(cc.Node.EventType.TOUCH_START);
+        }
+    }
+
+    // 设置解散按钮
+    setDismissBtn(active, enable = false){
+        this.dismissBtn.active = active;
+        this.dismissBtn.getComponent(Button).interactable = enable;
+        if(enable){
+            this.dismissBtn.off(cc.Node.EventType.TOUCH_START);
+            this.dismissBtn.on(cc.Node.EventType.TOUCH_START, () => this.dismissRoom());
+        }
+        else{
+            this.dismissBtn.off(cc.Node.EventType.TOUCH_START);
+        }
     }
 
     // 修改自定义状态回调
@@ -126,13 +190,12 @@ export default class Room extends cc.Component {
         if (playerInfo.playerId === global.playerId) {
             this.enableReadyBtn.active = !enable;
             this.cancelReadyBtn.active = enable;
-            this.enableLeaveBtn.active = !enable;
-            this.disableLeaveBtn.active = enable;
+            this.setLeaveBtn(true, !enable)
         } else {
-            this.enableStartGameBtn.active = enable;
-            this.disableStartGameBtn.active = !enable;
+            this.setStartBtn(true, enable);
         }
-        this.player_ready_status.string = enable ? "已准备" : "未准备";
+        this.playerItem.getChildByName('player_ready_status').getComponent(Label).string = enable ? "已准备" : "未准备";
+        this.initRoomView();
     }
 
     // 修改自定义属性回调
@@ -146,14 +209,8 @@ export default class Room extends cc.Component {
 
     //发送聊天内容
     sendContent() {
-        global.player.updateCustomProperties(this.chatBox.string)
-            .then(() => {
-                this.chatBox.string = '';
-                Util.printLog('发送消息成功');
-            })
-            .catch((e) => {
-                Dialog.open('发送消息失败', 'err: ' + Util.errorMessage(e));
-            });
+        global.player.updateCustomProperties(this.chatBox.string);
+        this.chatBox.string = '';
     }
 
     // 修改房间属性回调
@@ -166,26 +223,14 @@ export default class Room extends cc.Component {
     ready() {
         Util.printLog(`准备就绪`);
         let ready = 1;
-        global.player.updateCustomStatus(ready).then(() => {
-            // 修改玩家自定义状态
-            this.initRoomView();
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Dialog.open("提示", "准备就绪失败" + Util.errorMessage(e));
-        });
+        global.player.updateCustomStatus(ready);
     }
 
     // 取消准备
     cancelReady() {
         Util.printLog(`取消准备`);
         let unready = 0;
-        global.player.updateCustomStatus(unready).then(() => {
-            // 修改玩家自定义状态
-            this.initRoomView();
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Dialog.open("提示", "取消准备失败" + Util.errorMessage(e));
-        });
+        global.player.updateCustomStatus(unready);
     }
 
     // 踢人
@@ -229,54 +274,73 @@ export default class Room extends cc.Component {
             });
         }
         // 设置文本标签
-        this.player_id.string = playerId;
-        this.owner_id.string = roomInfo.ownerId === undefined ? "" : roomInfo.ownerId;
-        this.houseIdEditBox.string = "游戏id：" + (global.gameId || "");
-        this.roomIdEditBox.string = "联机房间id：" + (roomInfo.roomId || "");
-        let isOwner = (roomInfo.ownerId === global.playerId);
-        this.initDefaultBtn(isOwner);
-        if (roomInfo.players.length == 2) {
-            // 设置玩家准备后，玩家或者房主按钮的变化
-            this.setPlayerOrOwnerByReadyBtn(readyStatus === 1, isOwner);
+        let ownerItem = this.owner.getChildByName('player_item');
+        let playerItem = this.commonPlayer.getChildByName('player_item');
+        ownerItem.getChildByName('name').getComponent(Label).string = roomInfo.ownerId === undefined ? "" : roomInfo.ownerId;
+        playerItem.getChildByName('name').getComponent(Label).string = playerId;
+        ownerItem.getChildByName('owner_flag').active = true;
+        playerItem.getChildByName('owner_flag').active = false;
+        this.ownerItem.getChildByName('player_ready_status').active = false;
+        this.loadingTip.active = this.isLoadingStatus;
+        if (this.isLoadingStatus) {
+            this.loadingTip.active = this.isLoadingStatus;
         }
+        else {
+            this.houseIdEditBox.string = "游戏id：" + (global.gameId || "");
+            this.roomIdEditBox.string = "联机房间id：" + (roomInfo.roomId || "");
+        }
+
+        this.initDefaultBtn(
+            roomInfo.ownerId === global.playerId,
+            roomInfo.players.length,
+            readyStatus === 1
+        );
     }
 
-    // 初始化默认按钮 是否显示 true是显示，false不显示
-    initDefaultBtn(isOwner: boolean) {
-        // false非房主没有“开始游戏按钮”  true房主有“开始游戏按钮”
-        this.enableStartGameBtn.active = isOwner;
-        this.disableStartGameBtn.active = isOwner;
-        // false非房主没有“踢人按钮”  true房主有“踢人按钮”
-        this.kickPersonBtn.active = isOwner;
-        // false非房主没有“解散房间”  true房主有“解散按钮”
-        this.enableDismissBtn.active = isOwner;
-        this.enableReadyBtn.active = !isOwner;
-        this.enableLeaveBtn.active = true;
-        this.disableLeaveBtn.active = false;
-        this.cancelReadyBtn.active = false;
-        if (isOwner) {
-            // 房主
-            this.kickPersonBtn.active = false; // 默认不显示
-            this.enableStartGameBtn.active = false; // 默认不显示
-            this.player_ready_status.string = ""; // 默认不显示
-        }
-    }
-
-    // 设置玩家准备后，玩家或者房主按钮的变化
-    setPlayerOrOwnerByReadyBtn(enable: boolean, isOwner: boolean) {
-        if (!isOwner) {
-            // true已准备 false未准备
-            this.enableReadyBtn.active = !enable;
-            this.cancelReadyBtn.active = enable;
-            this.enableLeaveBtn.active = !enable;
-            this.disableLeaveBtn.active = enable;
+    // 初始化默认按钮
+    initDefaultBtn(isOwner: boolean, playerCount: number, commonPlayerReady: boolean) {
+        // 房间只有一人时，肯定为房主
+        if(playerCount === 1){
+            this.enableReadyBtn.active = false;
+            this.cancelReadyBtn.active = false;
+            // 房主有开始按钮，但人没齐时不注册监听，不响应
+            this.setStartBtn(true);
+            // 一开始只有房主，默认不显示踢人按钮
+            this.setKickBtn(false);
+            // 房主才有解散按钮，只在按钮存在即可解散，即有响应
+            this.setDismissBtn(true, true)
+            // 房主和非房主均有离开按钮
+            this.setLeaveBtn(true,true);
+            this.playerItem.getChildByName('player_ready_status').getComponent(Label).string = "";
         } else {
-            this.kickPersonBtn.active = true;
-            // true已准备 false未准备
-            this.disableStartGameBtn.active = !enable;
-            this.enableStartGameBtn.active = enable;
+            // 房间有两人时，得看是初始化房主还是非房主的界面
+            if (isOwner) {
+                this.enableReadyBtn.active = false;
+                this.cancelReadyBtn.active = false;
+                // 加载状态时，非房主肯定是已准备状态
+                if (this.isLoadingStatus) {
+                    this.setStartBtn(true);
+                    this.setKickBtn(true);
+                    this.setDismissBtn(true);
+                    this.setLeaveBtn(true,false);
+                } else {
+                    // 非加载状态时，要看非房主的准备状态
+                    this.setStartBtn(true, commonPlayerReady);
+                    this.setKickBtn(true, true);
+                    this.setDismissBtn(true, true);
+                    this.setLeaveBtn(true,true);
+                }
+            } else {
+                // 非房主
+                this.enableReadyBtn.active = !commonPlayerReady;
+                this.cancelReadyBtn.active = commonPlayerReady;
+                this.setStartBtn(false);
+                this.setKickBtn(false);
+                this.setDismissBtn(false);
+                this.setLeaveBtn(true, !commonPlayerReady)
+            }
+            this.playerItem.getChildByName('player_ready_status').getComponent(Label).string = commonPlayerReady ? "已准备" : "未准备";
         }
-        this.player_ready_status.string = enable ? "已准备" : "未准备";
     }
 
     leaveRoom() {
@@ -324,6 +388,7 @@ export default class Room extends cc.Component {
             if (readyStatus === 0) {
                 Dialog.open("提示", "还有玩家未准备，请稍后！");
             } else {
+                // 全部加载完毕则开始帧同步
                 global.room.startFrameSync().then(() => {
                     // 开始帧同步成功
                     Util.printLog("开始帧同步成功");
@@ -333,6 +398,29 @@ export default class Room extends cc.Component {
                 });
             }
         });
+    }
+
+    startLoading() {
+        // 加载过程中不允许解散、退出、踢人操作
+        this.setDismissBtn(true);
+        this.setKickBtn(true);
+        this.setLeaveBtn(true, false);
+        this.setStartBtn(true);
+        this.cancelReadyBtn.getComponent(Button).interactable = false;
+
+        this.houseIdEditBox.string = "";
+        this.roomIdEditBox.string = "";
+        this.isLoadingStatus = true;
+        this.loadingTip.active = true;
+        let ownerProgress = this.ownerItem.getChildByName('progressBar');
+        let playerProgress = this.playerItem.getChildByName('progressBar');
+
+        ownerProgress.active = true;
+        ownerProgress.getComponent(cc.ProgressBar).progress = 0;
+
+        this.playerItem.getChildByName('player_ready_status').active = false;
+        playerProgress.active = true;
+        playerProgress.getComponent(cc.ProgressBar).progress = 0;
     }
 
     onDisable() {
@@ -357,6 +445,8 @@ export default class Room extends cc.Component {
     // ====================SDK广播====================
     onJoining() {
         Util.printLog("SDK广播--加入房间");
+        // 加入房间后，设置好房间类型
+        setRoomType(RoomType.OneVOne);
         this.initRoomView()
     }
 
@@ -377,36 +467,96 @@ export default class Room extends cc.Component {
     }
 
     onStartFrameSync() {
+        this.startLoading();
+        this.mockLoadingProgress(this);
+    }
+
+    onDirectStartFrameSync() {
+        global.room.players.forEach(function (player) {
+            if (global.playerId == player.playerId) {
+                if (player.customPlayerProperties != null && player.customPlayerProperties=="watcher")
+                {
+                    global.isWatcher = true;
+                    cc.director.loadScene("game");
+                    return;
+                }
+            }
+        });
         cc.director.loadScene("game");
     }
 
-    onDisconnect(playerInfo: PlayerInfo) {
+    mockLoadingProgress(self) {
+        let increment = 0.1 * (Math.ceil(Math.random() * 12345 + 1) % 4);
+        let progress = (global.client.playerId === global.client.room.ownerId) ?
+            self.ownerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress :
+            self.playerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress;
+        progress = (progress + increment > 1) ? 1 : progress + increment;
+        global.client.room.sendToServer(JSON.stringify({
+            playerId: global.client.playerId,
+            type: "Progress",
+            progress
+        }));
+    }
+
+    onConnect(playerInfo: PlayerInfo) {
         if (playerInfo.playerId === global.playerId) {
-            Util.printLog("玩家掉线");
-            this.reConnect();
+            global.isConnected = true;
+            Util.printLog("玩家在线了");
         } else {
-            Util.printLog("房间内其他玩家掉线，playerId:" + playerInfo.playerId);
+            Util.printLog("房间内其他玩家上线了，playerId:" + playerInfo.playerId);
         }
     }
 
-    // 房间内重连
-    reConnect() {
-        if (global.isTeamMode) {
-            cc.director.loadScene("hall");
+    async onDisconnect(playerInfo: PlayerInfo) {
+        if (playerInfo.playerId === global.playerId) {
+            global.isConnected = false;
+            Util.printLog("玩家掉线，playerId : " + playerInfo.playerId);
+            if (global.isTeamMode) {
+                cc.director.loadScene("hall");
+            } else {
+                // 没有超过重连时间，就进行重连操作
+                while (!global.isConnected){
+                    // 1秒重连一次，防止并发过大游戏直接卡死
+                    await sleep(1000).then();
+                    await global.room.reconnect();
+                }
+            }
         } else {
-            // 没有超过重连时间，就进行重连操作
-            global.room.reconnect().then(() => {
-                Util.printLog("玩家重连成功");
-            }).catch((error) => {
-                if (!error.code) {
-                    // 加入房间请求不通就继续重连
-                    this.reConnect();
-                    return;
+            Util.printLog("房间内其他玩家掉线，playerId : " + playerInfo.playerId);
+        }
+    }
+
+    // 接收实时服务器消息
+    onReceiveFromGameServer(data: RecvFromServerInfo) {
+        let self = this;
+        if (data.msg) {
+            let parseMsg = JSON.parse(data.msg);
+            let progress = parseMsg.progress;
+            let playerId = parseMsg.playerId;
+            if (progress) {
+                // 此处要区分玩家，针对不同玩家渲染独立的progressBar
+                if (playerId === global.client.room.ownerId) {
+                    this.ownerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress = progress;
+                    this.ownerItem.getChildByName('label').getComponent(Label).string = Math.floor(progress * 100) + "%";
+                    this.ownerItem.getChildByName('label').active = true;
+                } else {
+                    this.playerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress = progress;
+                    this.playerItem.getChildByName('label').getComponent(Label).string = Math.floor(progress * 100) + "%";
+                    this.playerItem.getChildByName('label').active = true;
                 }
-                if (error.code !== 0) {
-                    cc.director.loadScene("hall");
-                }
-            });
+
+            }
+            const randomSec = Math.ceil(Math.random() * 1000);
+            if (progress < 1 && playerId === global.client.room.playerId) {
+                setTimeout(self.mockLoadingProgress, randomSec, self);
+            }
+        }
+
+        // 检测是否都已加载完毕
+        if (this.ownerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress === 1 &&
+            this.playerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress === 1) {
+            this.isLoadingStatus = false;
+            cc.director.loadScene("game");
         }
     }
 }

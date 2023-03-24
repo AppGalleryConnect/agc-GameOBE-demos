@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,18 +34,18 @@ public class ReopenGame : MonoBehaviour
 
     void Start()
     {
-        this.InitListener();
+        InitListener();
     }
 
     void InitListener() {
-        this.BtnReopen.onClick.AddListener(() => Reopen());
-        this.BtnExit.onClick.AddListener(() => Exit());
+        BtnReopen.onClick.AddListener(() => Reopen());
+        BtnExit.onClick.AddListener(() => Exit());
     }
 
     public void Reopen() {
         // 处理确认回调事件
-        if (this.Callback != null) {
-            this.Callback.Reopen();
+        if (Callback != null) {
+            Callback.Reopen();
         }
         // 销毁dialog
         DialogDestroy();
@@ -55,9 +53,9 @@ public class ReopenGame : MonoBehaviour
 
     public void Exit() {
         // 处理确认回调事件
-        if (this.Callback != null)
+        if (Callback != null)
         {
-            this.Callback.Exit();
+            Callback.Exit();
         }
         // 销毁dialog
         DialogDestroy();
@@ -66,19 +64,19 @@ public class ReopenGame : MonoBehaviour
     // 打开对话框
     public void Open(String title, String content)
     {
-        this.Title.text = title;
-        this.Contetnt.text = content;
+        Title.text = title;
+        Contetnt.text = content;
     }
 
     void DialogDestroy()
     {
-        Destroy(this.gameObject);
+        Destroy(gameObject);
         GameObject bg = GameObject.Find("/bg(Clone)");
         Destroy(bg);
     }
 
     // 添加事件监听
-    public void AddEventListener(ReopenCallback Callback) {
-        this.Callback = Callback;
+    public void AddEventListener(ReopenCallback cb) {
+        Callback = cb;
     }
 }

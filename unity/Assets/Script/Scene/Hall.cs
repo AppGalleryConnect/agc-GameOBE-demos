@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,13 +30,7 @@ public class Hall : MonoBehaviour
     public bool Flag = true;
 
     public string Msg;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
+    
     // Update is called once per frame
     void Update()
     {
@@ -62,7 +56,24 @@ public class Hall : MonoBehaviour
         }
     }
 
-
+    private void OnEnable()
+    {
+        Application.logMessageReceivedThreaded += ApplicationOnlogMessageReceivedThreaded;
+    }
+    
+    private void ApplicationOnlogMessageReceivedThreaded(string condition, string stacktrace, LogType type)
+    {
+        switch (type)
+        {
+            case LogType.Exception:
+            case LogType.Error:
+                Debug.LogError($"exception logMessageReceivedThreaded:logType:{type}; condition: {condition}; strackTrace:{stacktrace}");
+                break;
+            default:
+                Debug.Log($"normal logMessageReceivedThreaded:logType:{type}; condition: {condition};strackTrace:{stacktrace}");
+                break;
+        }
+    }
     //点击菜鸟区按钮
     public void OnOrdinaryRoomBtn()
     {
@@ -123,7 +134,25 @@ public class Hall : MonoBehaviour
             {
                 if (response.RtnCode == 0)
                 {
-                    Debug.Log("MatchPlayer Success");
+                    Debug.Log("MatchPlayer start");
+                    Global.isOnlineMatch = true;
+                    Flag = true;
+                }
+                else
+                {
+                    Debug.Log("MatchPlayer failed");
+                    Msg = "快速匹配失败"+Util.ErrorMessage(response);
+                    Flag = false;
+                }
+                if (response.RtnCode == (int)ErrorCode.PLAYER_MATCH_CANCELED){
+                    Msg = "快速匹配取消" + Util.ErrorMessage(response);
+                }
+            });
+            Global.client.OnMatch = response =>
+            {
+                if (response.RtnCode == 0)
+                {
+                    Debug.Log("MatchPlayer success");
                     Global.Room = response.Room;
                     Global.player = response.Room._player;
                     Global.isOnlineMatch = true;
@@ -138,7 +167,7 @@ public class Hall : MonoBehaviour
                 if (response.RtnCode == (int)ErrorCode.PLAYER_MATCH_CANCELED){
                     Msg = "快速匹配取消" + Util.ErrorMessage(response);
                 }
-            });
+            };
         }
         catch (SDKException e) {
             Msg = "快速匹配失败" + Util.ExceptionMessage(e);
@@ -164,7 +193,6 @@ public class Hall : MonoBehaviour
         GameObject bg = Instantiate(BackGroud);
         CreateGroupConfig createGroupConfig = new CreateGroupConfig
         {
-
             MaxPlayers = 2,
             GroupName = "快乐小黑店",
             IsLock = 0,

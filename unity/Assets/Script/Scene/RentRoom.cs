@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ using UnityEngine.UI;
 using Com.Huawei.Game.Gobes;
 using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
+using Random = UnityEngine.Random;
 
 public class RentRoom : MonoBehaviour
 {
@@ -33,44 +34,96 @@ public class RentRoom : MonoBehaviour
 
     public GameObject playerParent;
 
-    public GameObject prepareOrStartBtn;
+    public Button leaveBtn;
+
+    public Button prepareOrStartBtn;
 
     public GameObject message;
 
+    public GameObject commonHeader;
+
+    public GameObject loadingHeader;
+
     public static bool isOwner = false;
 
-    private const float pollTime = 2.0f;
-    
-    void Start() {
+    private bool bLoading = false;
+
+    private float ownerProgressValue = 0f;
+
+    private float commonPlayerProgressValue = 0f;
+
+    void Start()
+    {
         InitListener();
-        // 由于玩家切换准备状态无法感知，故通过轮询来
-        InvokeRepeating("GetRoomInfo", 0f, pollTime);
-        if(Global.Room.roomInfo.RoomStatus ==(int)RoomStatus.SYNCING ) {
+
+        Invoke("GetRoomInfo", 0f);
+
+        if (Global.Room.roomInfo.RoomStatus == (int) RoomStatus.SYNCING)
+        {
             OnStartFrameSync();
         }
     }
 
-
-    public void InitListener() {
+    public void InitListener()
+    {
         Util.SaveRoomType(FrameSync.RoomType.ROOM);
-        Global.Room.OnJoin = (res) => {
+        Global.Room.OnJoin = (res) =>
+        {
             Debug.Log("加入后的回调" + CommonUtils.JsonSerializer(res));
             UnityMainThread.wkr.AddJob(GetRoomInfo);
         };
 
-        Global.Room.OnLeave = (res) => {
-            if (Global.Room != null && Global.playerId != res.PlayerId) {
+        Global.Room.OnLeave = (res) =>
+        {
+            if (Global.Room != null && Global.playerId != res.PlayerId)
+            {
                 UnityMainThread.wkr.AddJob(GetRoomInfo);
-            } else {
+            }
+            else
+            {
                 UnityMainThread.wkr.AddJob(Route.GoHall);
             }
         };
 
-        Global.Room.OnDismiss = () => {
-            UnityMainThread.wkr.AddJob(Route.GoHall);
-        };
+        Global.Room.OnDismiss = () => { UnityMainThread.wkr.AddJob(Route.GoHall); };
 
         Global.Room.OnStartSyncFrame = () => OnStartFrameSync();
+
+        Global.Room.OnRecvFromServer = (data) => { OnReceiveFromServer(data); };
+
+        Global.Room.OnUpdateCustomStatus = (status) =>
+        {
+            Debug.Log("OnUpdateCustomStatus " + status);
+            UnityMainThread.wkr.AddJob(GetRoomInfo);
+        };
+    }
+
+    private void OnReceiveFromServer(RecvFromServerInfo data)
+    {
+        // TODO根据返回值检测所有玩家加载进度是否都达到100%，是则切换至帧同步场景
+        Debug.Log("接收到实时服务消息" + CommonUtils.JsonSerializer(data));
+        RTMessage rtMessage = CommonUtils.JsonDeserializer<RTMessage>(data.Msg);
+
+        if (rtMessage.playerId == Global.Room.roomInfo.OwnerId)
+        {
+            ownerProgressValue = rtMessage.progress;
+        }
+        else
+        {
+            commonPlayerProgressValue = rtMessage.progress;
+        }
+
+        UnityMainThread.wkr.AddJob(RenderView);
+
+        if (rtMessage.playerId == Global.playerId && rtMessage.progress < 1)
+        {
+            UnityMainThread.wkr.AddJob(ReportPorgress);
+        }
+
+        if (ownerProgressValue >= 1f && commonPlayerProgressValue >= 1f)
+        {
+            UnityMainThread.wkr.AddJob(Route.GoGameView);
+        }
     }
 
     private void RenderView()
@@ -88,11 +141,13 @@ public class RentRoom : MonoBehaviour
         if (isOwner)
         {
             prepareOrStartBtn.GetComponentInChildren<Text>().text = "开始游戏";
-            prepareOrStartBtn.GetComponent<Button>().interactable = Global.Room.roomInfo.Players.Length > 1;
+            prepareOrStartBtn.GetComponent<Button>().interactable =
+                Global.Room.roomInfo.Players.Length > 1 && !bLoading;
         }
 
         // 渲染玩家
         gameObject.BroadcastMessage("DeleteFace", SendMessageOptions.DontRequireReceiver);
+
         foreach (PlayerInfo player in Global.Room.roomInfo.Players)
         {
             CreatFaceParam param;
@@ -106,8 +161,19 @@ public class RentRoom : MonoBehaviour
             }
 
             GameObject playerPrefab = Instantiate(facePrefab, playerParent.transform);
+            playerPrefab.name = player.PlayerId;
             playerPrefab.transform.localPosition = new Vector3(x, y, 0);
-            param = new CreatFaceParam{ index = index, isOwner = isOwner, name = player.PlayerId, status = player.CustomPlayerStatus };
+            param = new CreatFaceParam
+            {
+                index = index,
+                isOwner = isOwner,
+                name = player.PlayerId,
+                loadingStatus = bLoading,
+                progressValue = player.PlayerId == Global.Room.roomInfo.OwnerId
+                    ? ownerProgressValue
+                    : commonPlayerProgressValue,
+                status = player.CustomPlayerStatus
+            };
             playerPrefab.SendMessage("RandomizeCharacter", param, SendMessageOptions.DontRequireReceiver);
         }
     }
@@ -119,7 +185,6 @@ public class RentRoom : MonoBehaviour
         {
             if (res.RtnCode == 0)
             {
-                this.ReLogin();
                 Route.GoHall();
                 Debug.Log("离开房间success");
             }
@@ -140,6 +205,7 @@ public class RentRoom : MonoBehaviour
                 CreateMessage("玩家未准备");
                 return;
             }
+
             Debug.Log("开始游戏");
             Global.Room.Update(res =>
             {
@@ -147,10 +213,7 @@ public class RentRoom : MonoBehaviour
                 {
                     Debug.Log("开始游戏success");
 
-                    Global.Room.StartFrameSync(response =>
-                    {
-                        Debug.Log(Util.ErrorMessage(response));
-                    });
+                    Global.Room.StartFrameSync(response => { Debug.Log(Util.ErrorMessage(response)); });
                 }
                 else
                 {
@@ -181,7 +244,8 @@ public class RentRoom : MonoBehaviour
 
     public void GetRoomInfo()
     {
-        Global.Room = Global.Room?.Update(res => {
+        Global.Room = Global.Room?.Update(res =>
+        {
             if (res.RtnCode == 0)
             {
                 Global.Room.roomInfo = res.RoomInfo;
@@ -193,7 +257,7 @@ public class RentRoom : MonoBehaviour
     private bool AllPlayersReady()
     {
         bool flag = true;
-        foreach(PlayerInfo player in Global.Room.roomInfo.Players)
+        foreach (PlayerInfo player in Global.Room.roomInfo.Players)
         {
             if (player.PlayerId != Global.Room.roomInfo.OwnerId && player.CustomPlayerStatus == 0)
             {
@@ -201,25 +265,77 @@ public class RentRoom : MonoBehaviour
                 break;
             }
         }
+
         return flag;
     }
 
     private void CreateMessage(string tip)
     {
-        GameObject MessageBox = Instantiate(message, prepareOrStartBtn.transform.parent);
+        GameObject MessageBox = Instantiate(message, GameObject.Find("Canvas").transform);
         MessageBox.GetComponent<Message>().tip.text = tip;
     }
-    
-    void ReLogin() { 
-        Global.client.Init(response => {});
-    }
-    
-    
+
     private void OnStartFrameSync()
     {
         SDKDebugLogger.Log("广播--游戏帧同步开始");
         Global.state = 1; // 帧同步状态 0停止帧同步，1开始帧同步
         Global.keyOperate = 1; // 按键操作限制 0限制操作，1允许操作
-        UnityMainThread.wkr.AddJob(Route.GoGameView);
+
+        // 先进入加载
+        foreach (PlayerInfo player in Global.Room.roomInfo.Players)
+            if (Global.playerId == player.PlayerId)
+            {
+                if (player.CustomPlayerProperties != null && player.CustomPlayerProperties.Equals("watcher"))
+                {
+                    Global.isWatcher = true;
+                    Route.GoGameView();
+                }
+                else
+                {
+                    UnityMainThread.wkr.AddJob(StartLoading);
+                }
+            }
+    }
+
+    private void StartLoading()
+    {
+        Debug.Log("Enter StartLoading");
+        bLoading = true;
+        commonHeader.SetActive(false);
+        loadingHeader.SetActive(true);
+        leaveBtn.GetComponent<Button>().interactable = false;
+        UnityMainThread.wkr.AddJob(GetRoomInfo);
+        prepareOrStartBtn.GetComponent<Button>().interactable = false;
+        // 开始上报自己的加载进度
+        ReportPorgress();
+    }
+
+    private void ReportPorgress()
+    {
+        float step = 0.1f * ((Random.Range(1, 12345) % 4) + 1);
+        float baseValue = isOwner ? ownerProgressValue : commonPlayerProgressValue;
+        float sliderValue = baseValue + step > 1 ? 1 : baseValue + step;
+
+        RTMessage rtMsg = new RTMessage();
+        rtMsg.type = "Progress";
+        rtMsg.playerId = Global.playerId;
+        rtMsg.progress = sliderValue;
+        rtMsg.platform = "unity3d";
+
+        SendToServerInfo info = new SendToServerInfo()
+        {
+            Msg = CommonUtils.JsonSerializer(rtMsg)
+        };
+        Global.Room.SendToServer(info, (res) =>
+        {
+            if (res == 0)
+            {
+                Debug.Log("上报加载进度成功" + CommonUtils.JsonSerializer(rtMsg));
+            }
+            else
+            {
+                Debug.LogError("上报加载进度失败");
+            }
+        });
     }
 }

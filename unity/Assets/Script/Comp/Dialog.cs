@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,21 +30,21 @@ public class Dialog : MonoBehaviour
     void Start()
     {
 
-        this.InitListener();
+        InitListener();
     }
 
     void InitListener() {
-        this.BtnConfirm.onClick.AddListener(Dispear);
+        BtnConfirm.onClick.AddListener(Dispear);
     }
 
     // 打开弹框
     public void Open(String title,String content) {
-        this.Title.text = title;
-        this.Contetnt.text = content;
+        Title.text = title;
+        Contetnt.text = content;
     }
 
     void Dispear() {
-        Destroy(this.gameObject);
+        Destroy(gameObject);
         GameObject bg = GameObject.Find("/bg(Clone)");
         Destroy(bg);
     }

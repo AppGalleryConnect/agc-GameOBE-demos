@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ export default class Team extends cc.Component {
         }
         // 当前操作人id（比如是谁退出了队伍）
         let operator = parseEventParam.group.players[0].playerId;
-        if (operator == global.group.playerId) {  // 是本人退出
+        if (operator == global.playerId) {  // 是本人退出
             cc.director.loadScene("hall");
         } else {
             this.updateGroup();

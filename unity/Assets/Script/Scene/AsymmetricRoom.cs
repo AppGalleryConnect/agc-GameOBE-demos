@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Com.Huawei.Game.Gobes;
 using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
@@ -103,11 +101,11 @@ public class AsymmetricRoom : MonoBehaviour
         // 监听加入房间
         Global.room.OnJoin = playerInfo => OnJoining();
         // 监听开始帧同步
-        Global.room.OnStartSyncFrame = () => this.OnStartFrameSync();
+        Global.room.OnStartSyncFrame = () => OnStartFrameSync();
         // 断线重连
-        Global.room.OnDisconnect = playerInfo => this.OnDisconnect(playerInfo); // 断连监听
+        Global.room.OnDisconnect = playerInfo => OnDisconnect(playerInfo); // 断连监听
         // 离开房间
-        Global.room.OnLeave = playerInfo => this.OnLeaving(playerInfo);
+        Global.room.OnLeave = playerInfo => OnLeaving(playerInfo);
     }
 
     private void InitRoomView() {
@@ -126,7 +124,7 @@ public class AsymmetricRoom : MonoBehaviour
 
     private void SetRoomView()
     {
-        this.InitAllBtnActive();
+        InitAllBtnActive();
         RoomInfo roomInfo = Global.room != null ? Global.room.roomInfo : null;
         PlayerInfo[] playerInfos = roomInfo.Players;
         Boolean ownerIsRed = true;
@@ -152,19 +150,19 @@ public class AsymmetricRoom : MonoBehaviour
                 if (0 < ack && ack < 11)
                 {
                     // 房主在黄队：渲染黄队1为房主
-                    this.PlayerFourName.text = ackData.PlayerName;
-                    this.ReadyBtnFour.gameObject.SetActive(false);
-                    this.UnReadyBtnFour.gameObject.SetActive(false);
-                    this.PlayerFourStatus.text = "房主";
+                    PlayerFourName.text = ackData.PlayerName;
+                    ReadyBtnFour.gameObject.SetActive(false);
+                    UnReadyBtnFour.gameObject.SetActive(false);
+                    PlayerFourStatus.text = "房主";
                     ownerIsRed = false;
                 }
                 else
                 {
                     // 房主在红队：渲染红队1为房主
-                    this.PlayerOneName.text = ackData.PlayerName;
-                    this.ReadyBtnOne.gameObject.SetActive(false);
-                    this.UnReadyBtnOne.gameObject.SetActive(false);
-                    this.PlayerOneStatus.text = "房主";
+                    PlayerOneName.text = ackData.PlayerName;
+                    ReadyBtnOne.gameObject.SetActive(false);
+                    UnReadyBtnOne.gameObject.SetActive(false);
+                    PlayerOneStatus.text = "房主";
 
                 }
             }
@@ -176,19 +174,19 @@ public class AsymmetricRoom : MonoBehaviour
             //房主为黄队，渲染红队
             if (!ownerIsRed && playerInfos[i].TeamId != ownerTeamId)
             {
-                allReadyCount = this.DrawRedPlayer(playerInfos[i], allReadyCount, playerNumber);
+                allReadyCount = DrawRedPlayer(playerInfos[i], allReadyCount, playerNumber);
                 playerNumber++;
             }
             //房主在红队,渲染房主外成员
             if (ownerIsRed && playerInfos[i].TeamId == ownerTeamId && playerInfos[i].PlayerId != roomInfo.OwnerId)
             {
                 playerNumber++;
-                allReadyCount = this.DrawRedPlayer(playerInfos[i], allReadyCount, playerNumber);
+                allReadyCount = DrawRedPlayer(playerInfos[i], allReadyCount, playerNumber);
             }
             //房主在红队,渲染黄队
             if (ownerIsRed && playerInfos[i].TeamId != ownerTeamId )
             {
-                allReadyCount = this.DrawYellowPlayer(playerInfos[i], allReadyCount);
+                allReadyCount = DrawYellowPlayer(playerInfos[i], allReadyCount);
             }
         }
 
@@ -196,15 +194,15 @@ public class AsymmetricRoom : MonoBehaviour
         if (roomInfo.OwnerId != Global.playerId)
         {
             // 非房主
-            this.StartBtn.gameObject.SetActive(false);
+            StartBtn.gameObject.SetActive(false);
         }
         else
         {
             //是否当前玩家
             //除了房主以外的3个人准备就绪
             Boolean allReadyStatus = allReadyCount == 3 ? true : false;
-            this.StartBtn.gameObject.SetActive(true);
-            this.StartBtn.interactable = allReadyStatus;
+            StartBtn.gameObject.SetActive(true);
+            StartBtn.interactable = allReadyStatus;
         }
     }
 
@@ -215,22 +213,17 @@ public class AsymmetricRoom : MonoBehaviour
         Boolean isPlayerStatus = player.CustomPlayerStatus == 1 ? true : false;
         switch (playerNumber) {
             case 1:
-                if (player.IsRobot==1)
+                if (player.IsRobot == 1)
                 {
-                    this.PlayerOneName.fontSize = FontSize;
-                    this.PlayerOneName.text = customPlayerProperties.PlayerName;
+                    PlayerOneName.fontSize = FontSize;
                 }
-                else
-                { 
-                    this.PlayerOneName.text = customPlayerProperties.PlayerName;
-                }
-                
+                PlayerOneName.text = customPlayerProperties.PlayerName;
                 if (player.PlayerId == Global.playerId)
                 {    // 当前玩家才考虑按钮的显示与隐藏 
-                    this.UnReadyBtnOne.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
-                    this.ReadyBtnOne.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
+                    UnReadyBtnOne.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
+                    ReadyBtnOne.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
                 }
-                this.PlayerOneStatus.text = isPlayerStatus ? "已准备" : "未准备";
+                PlayerOneStatus.text = isPlayerStatus ? "已准备" : "未准备";
                 if (isPlayerStatus)
                 {
                     allReadyCount++;
@@ -239,20 +232,16 @@ public class AsymmetricRoom : MonoBehaviour
             case 2:
                 if (player.IsRobot==1)
                 {
-                    this.PlayerTwoName.fontSize = FontSize;
-                    this.PlayerTwoName.text = customPlayerProperties.PlayerName;
+                    PlayerTwoName.fontSize = FontSize;
+                   
                 }
-                else
-                { 
-                    this.PlayerTwoName.text = customPlayerProperties.PlayerName;
-                }
-                
+                PlayerTwoName.text = customPlayerProperties.PlayerName;
                 if (player.PlayerId == Global.playerId)
                 {    // 当前玩家才考虑按钮的显示与隐藏
-                    this.UnReadyBtnTwo.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
-                    this.ReadyBtnTwo.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
+                    UnReadyBtnTwo.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
+                    ReadyBtnTwo.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
                 }
-                this.PlayerTwoStatus.text = isPlayerStatus ? "已准备" : "未准备";
+                PlayerTwoStatus.text = isPlayerStatus ? "已准备" : "未准备";
                 if (isPlayerStatus)
                 {
                     allReadyCount++;
@@ -261,19 +250,15 @@ public class AsymmetricRoom : MonoBehaviour
             case 3:
                 if (player.IsRobot==1)
                 {
-                    this.PlayerThreeName.fontSize = FontSize;
-                    this.PlayerThreeName.text = customPlayerProperties.PlayerName;
+                    PlayerThreeName.fontSize = FontSize;
                 }
-                else
-                { 
-                    this.PlayerThreeName.text = customPlayerProperties.PlayerName;
-                }
+                PlayerThreeName.text = customPlayerProperties.PlayerName;
                 if (player.PlayerId == Global.playerId)
                 {    // 当前玩家才考虑按钮的显示与隐藏
-                    this.UnReadyBtnThree.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
-                    this.ReadyBtnThree.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
+                    UnReadyBtnThree.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
+                    ReadyBtnThree.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
                 }
-                this.PlayerThreeStatus.text = isPlayerStatus ? "已准备" : "未准备";
+                PlayerThreeStatus.text = isPlayerStatus ? "已准备" : "未准备";
                 if (isPlayerStatus)
                 {
                     allReadyCount++;
@@ -290,20 +275,16 @@ public class AsymmetricRoom : MonoBehaviour
         Boolean isPlayerStatus = player.CustomPlayerStatus == 1 ? true : false;
         if (player.IsRobot==1)
         {
-            this.PlayerFourName.fontSize = FontSize;
-            this.PlayerFourName.text = customPlayerProperties.PlayerName;
+            PlayerFourName.fontSize = FontSize;
         }
-        else
-        { 
-            this.PlayerFourName.text = customPlayerProperties.PlayerName;
-        }
-        
+        PlayerFourName.text = customPlayerProperties.PlayerName;
+
         if (player.PlayerId == Global.playerId)
         {    // 当前玩家才考虑按钮的显示与隐藏 
-            this.UnReadyBtnFour.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
-            this.ReadyBtnFour.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
+            UnReadyBtnFour.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
+            ReadyBtnFour.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
         }
-        this.PlayerFourStatus.text = isPlayerStatus ? "已准备" : "未准备";
+        PlayerFourStatus.text = isPlayerStatus ? "已准备" : "未准备";
         if (isPlayerStatus)
         {
             allReadyCount++;
@@ -360,7 +341,7 @@ public class AsymmetricRoom : MonoBehaviour
         {
             if (response.RtnCode == 0) {
                 // 修改玩家自定义状态
-                this.InitRoomView();
+                InitRoomView();
             } else {
                 // 修改玩家自定义状态失败
                 Dialog.Open("提示", "准备就绪失败" + Util.ErrorMessage(response));
@@ -377,7 +358,7 @@ public class AsymmetricRoom : MonoBehaviour
             if (response.RtnCode == 0)
             {
                 // 修改玩家自定义状态
-                this.InitRoomView();
+                InitRoomView();
             } else {
                 // 修改玩家自定义状态失败
                 Dialog.Open("提示", "取消准备失败" + Util.ErrorMessage(response));
@@ -404,7 +385,6 @@ public class AsymmetricRoom : MonoBehaviour
                 {
                     Debug.Log("玩家重连失败");
                     UnityMainThread.wkr.AddJob(() => {
-                        this.ReLogin();
                         Route.GoHall();
                         isReConnect = FrameSync.ReConnectState.reConnectionDefault;
                     });
@@ -417,7 +397,6 @@ public class AsymmetricRoom : MonoBehaviour
                 // 重连失败
                 Debug.Log("重连失败");
                 UnityMainThread.wkr.AddJob(() => {
-                    this.ReLogin();
                     Route.GoHall();
                     isReConnect = FrameSync.ReConnectState.reConnectionDefault;
                 });
@@ -426,11 +405,7 @@ public class AsymmetricRoom : MonoBehaviour
             }
         }
     }
-
-    private void ReLogin()
-    {
-        Global.client.Init(response => { });
-    }
+    
 
 
     //=====================广播=====================
@@ -439,12 +414,11 @@ public class AsymmetricRoom : MonoBehaviour
         Debug.Log("广播--离开房间");
         if (Global.playerId == playerInfo.PlayerId)
         {
-            Global.client.Init(response => {});
             UnityMainThread.wkr.AddJob(() => Route.GoHall());
         }
         else
         {
-            this.InitRoomView();
+            InitRoomView();
         }
     }
 
@@ -471,32 +445,31 @@ public class AsymmetricRoom : MonoBehaviour
 
     private void OnJoining()
     {
-        this.InitRoomView();
+        InitRoomView();
     }
 
     /**
     * 主要是为了清空之前的值
     */
     private void InitAllBtnActive(){
-        this.PlayerOneName.text = "";
-        this.PlayerOneStatus.text = "";
-        this.ReadyBtnOne.gameObject.SetActive(false);
-        this.UnReadyBtnOne.gameObject.SetActive(false);
+        PlayerOneName.text = "";
+        PlayerOneStatus.text = "";
+        ReadyBtnOne.gameObject.SetActive(false);
+        UnReadyBtnOne.gameObject.SetActive(false);
 
-        this.PlayerTwoName.text = "";
-        this.PlayerTwoStatus.text = "";
-        this.ReadyBtnTwo.gameObject.SetActive(false);
-        this.UnReadyBtnTwo.gameObject.SetActive(false);
+        PlayerTwoName.text = "";
+        PlayerTwoStatus.text = "";
+        ReadyBtnTwo.gameObject.SetActive(false);
+        UnReadyBtnTwo.gameObject.SetActive(false);
 
-        this.PlayerThreeName.text = "";
-        this.PlayerThreeStatus.text = "";
-        this.ReadyBtnThree.gameObject.SetActive(false);
-        this.UnReadyBtnThree.gameObject.SetActive(false);
+        PlayerThreeName.text = "";
+        PlayerThreeStatus.text = "";
+        ReadyBtnThree.gameObject.SetActive(false);
+        UnReadyBtnThree.gameObject.SetActive(false);
 
-        this.PlayerFourName.text = "";
-        this.PlayerFourStatus.text = "";
-        this.ReadyBtnFour.gameObject.SetActive(false);
-        this.UnReadyBtnFour.gameObject.SetActive(false);
+        PlayerFourName.text = "";
+        PlayerFourStatus.text = "";
+        ReadyBtnFour.gameObject.SetActive(false);
+        UnReadyBtnFour.gameObject.SetActive(false);
     }
-
 }

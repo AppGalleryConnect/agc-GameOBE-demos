@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import global from "../../global";
 import Dialog from "../comp/Dialog";
 import {PlayerInfo} from "../../GOBE/GOBE";
 import {RoomType} from "../commonValue";
-import {setRoomType} from "../function/Common";
+import {setRoomType, sleep} from "../function/Common";
 
 export enum PlayerOnline {
     online = 1,  // 在线
@@ -101,7 +101,6 @@ export default class AsymmetricRoom extends cc.Component {
         this.initView();
         this.initListener();
         this.initSchedule();
-        setRoomType(RoomType.ThreeVOne);
         if(global.room.isSyncing){
             cc.director.loadScene("game");
         }
@@ -332,34 +331,37 @@ export default class AsymmetricRoom extends cc.Component {
         global.room.onJoin(() => this.onJoining());
         // 监听开始帧同步
         global.room.onStartFrameSync(() => this.onStartFrameSync());
-        // 断线重连
-        global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
+        // 上线通知监听
+        global.room.onConnect((playerInfo: PlayerInfo) => this.onConnect(playerInfo));
+        // 断线通知监听
+        global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo));
         // 离开房间
         global.room.onLeave((playerInfo) => this.onLeaving(playerInfo))
     }
 
-    onDisconnect(playerInfo: PlayerInfo) {
-        Util.printLog("玩家掉线");
+    onConnect(playerInfo: PlayerInfo) {
         if (playerInfo.playerId === global.playerId) {
-            this.reConnectRoom();
+            global.isConnected = true;
+            Util.printLog("玩家在线了");
+        } else {
+            Util.printLog("房间内其他玩家上线了，playerId:" + playerInfo.playerId);
         }
     }
 
-    reConnectRoom() {
-        // 没有超过重连时间，就进行重连操作
-        global.room.reconnect().then(() => {
-            Util.printLog("玩家重连成功");
-        }).catch((error) => {
-            if (!error.code) {
-                // 加入房间请求不通就继续重连
-                this.reConnectRoom();
-                return;
+    async onDisconnect(playerInfo: PlayerInfo) {
+        Util.printLog("玩家掉线");
+        if (playerInfo.playerId === global.playerId) {
+            // 没有超过重连时间，就进行重连操作
+            while (!global.isConnected){
+                // 1秒重连一次，防止并发过大游戏直接卡死
+                await sleep(1000).then();
+                global.room.reconnect().then(() => {
+                    Util.printLog("reconnect success");
+                }).catch((error) => {
+                    Util.printLog("reconnect err");
+                });
             }
-            if (error.code != 0) {
-                // 无法加入房间需要退出到大厅
-                cc.director.loadScene("hall");
-            }
-        });
+        }
     }
 
     leaveRoom() {
@@ -407,26 +409,18 @@ export default class AsymmetricRoom extends cc.Component {
     ready() {
         Util.printLog("准备");
         let ready = 1;
-        global.player.updateCustomStatus(ready).then(() => {
-            // 修改玩家自定义状态
-            this.initRoomView();
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Dialog.open("提示", "准备就绪失败" + Util.errorMessage(e));
-        });
+        global.player.updateCustomStatus(ready);
+        // 修改玩家自定义状态
+        this.initRoomView();
     }
 
     // 取消准备
     cancelReady() {
         Util.printLog("取消准备");
         let unready = 0;
-        global.player.updateCustomStatus(unready).then(() => {
-            // 修改玩家自定义状态
-            this.initRoomView();
-        }).catch((e) => {
-            // 修改玩家自定义状态失败
-            Dialog.open("提示", "取消准备失败" + Util.errorMessage(e));
-        });
+        global.player.updateCustomStatus(unready);
+        // 修改玩家自定义状态
+        this.initRoomView();
     }
 
     // 开始组队匹配游戏
@@ -478,6 +472,7 @@ export default class AsymmetricRoom extends cc.Component {
 
     // ====================广播====================
     onJoining() {
+        setRoomType(RoomType.ThreeVOne);
         this.initRoomView();
     }
 

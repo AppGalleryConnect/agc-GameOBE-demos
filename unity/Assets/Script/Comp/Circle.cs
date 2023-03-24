@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ public class Circle : MonoBehaviour
 {
     public void initCircle()
     {
-        this.gameObject.transform.position = new Vector3(2, -1, 0);
-        this.gameObject.GetComponent<Renderer>().material.color = Color.yellow;
+        gameObject.transform.position = new Vector3(2, -1, 0);
+        gameObject.GetComponent<Renderer>().material.color = Color.yellow;
     }
 
     /***
@@ -30,7 +30,7 @@ public class Circle : MonoBehaviour
      */
     public void ChangeColor()
     {
-        this.gameObject.GetComponent<Renderer>().material.color = Color.red;
+        gameObject.GetComponent<Renderer>().material.color = Color.red;
     }
     
     /**
