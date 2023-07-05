@@ -21,7 +21,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  2021.12.15-Changed method initPlayer
- *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
+ *  2023.06.28-Changed method initPlayer
+ *  2021.12.15-Changed method onCollisionEnter
+ *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 // Learn TypeScript:
@@ -35,8 +37,15 @@
 //  - [English] http://www.cocos2d-x.org/docs/creator/manual/en/scripting/life-cycle-callbacks.html
 
 import global from "../../global";
-import {Team, CollideTagEnum, FrameSyncCmd} from "../function/FrameSync";
-import * as Util from "../../util";
+import {
+    Team,
+    CollideTag,
+    frameSyncPlayerInitList,
+    colliderEventMap,
+    frameSyncPlayerList,
+    destroyedBulletSet
+} from "../function/FrameSync";
+import {PlayerData} from "../function/PlayerList";
 
 const {ccclass, property} = cc._decorator;
 
@@ -52,52 +61,84 @@ export default class Player extends cc.Component {
     @property(cc.Sprite)
     icon2Sprite: cc.Sprite = null;
 
+    @property(cc.ProgressBar)
+    hp: cc.ProgressBar = null;
+
     public cloudSize = 36;
     // 组件需要记录玩家id，后面有用
     playerId: string;
 
-    public initPlayer(id: string, rotation: number, x = 0, y = 0, playerTeamId: string, robotName?: string) {
+    action: cc.ActionInterval;
 
-        this.playerId = id;
+    public initPlayer(playerData: PlayerData) {
+        this.node.name = playerData.playerId;
+        this.playerId = playerData.playerId;
+        this.hp.getComponent(cc.ProgressBar).progress = playerData.hp / global.planeMaxHp;
 
-        if ((playerTeamId == null && id === global.playerId) || (playerTeamId != null && playerTeamId === Team.red)) {
+        if ((playerData.teamId == null && playerData.playerId === global.playerId) ||
+            (playerData.teamId != null && playerData.teamId === Team.red)
+        ) {
             this.icon1Sprite.node.active = true;
             this.icon2Sprite.node.active = false;
-            this.icon1Sprite.node.angle = rotation;
+            this.icon1Sprite.node.angle = playerData.direction;
         }
-        if ((playerTeamId == null && id !== global.playerId) || (playerTeamId != null && playerTeamId === Team.yellow)) {
+        if ((playerData.teamId == null && playerData.playerId !== global.playerId) ||
+            (playerData.teamId != null && playerData.teamId === Team.yellow))
+        {
             this.icon2Sprite.node.active = true;
             this.icon1Sprite.node.active = false;
-            this.icon2Sprite.node.angle = rotation;
+            this.icon2Sprite.node.angle = playerData.direction;
         }
-        if (id === global.playerId) {
-            id = "我";
+        if (playerData.playerId === global.playerId) {
+            this.label.string = '我';
         }
-        if (robotName) {
-            id = robotName;
+        else {
+            if (playerData.robotName) {
+                this.label.string = playerData.robotName;
+            }
+            else {
+                this.label.string = playerData.playerId;
+            }
         }
-        this.label.string = id;
-        this.node.x = x;
-        this.node.y = y;
+
+        this.node.x = playerData.x;
+        this.node.y = playerData.y;
     }
 
+    /**
+     * 碰撞检测
+     * @param other
+     */
     onCollisionEnter (other, self) {
-        if(other.tag == CollideTagEnum.bullet){
-            // 飞机被子弹击中后回到初始化位置
-            let otherTag: number = other.tag; // 碰到了谁
-            let selfTag: number = self.tag; // 自己的碰撞标签
-            let cmd: FrameSyncCmd = FrameSyncCmd.collide;
-            let playerId: string = this.playerId;
-            const data: Object = {
-                cmd, otherTag, selfTag, playerId
-            };
-            let frameData: string = JSON.stringify(data);
-            try{
-                global.room.sendFrame(frameData);
+        if(other.tag == CollideTag.bullet){
+            let bulletHead = other.node.name.split('_')[0];
+            if (bulletHead == this.playerId) {
+                return;
             }
-            catch (e) {
-                Util.printLog('Player onCollisionEnter sendFrame err: ' + e);
+            console.log(`Plane onCollisionEnter playerId: ${this.playerId}, selfTag: ${self.tag}, otherTag: ${other.tag},`);
+            let syncPlayer = frameSyncPlayerList.players.find((p) => p.playerId == this.playerId);
+            if(this.hp.getComponent(cc.ProgressBar).progress < 1){
+                console.log('----残血被攻击----');
+                let initPlayer = frameSyncPlayerInitList.players.find((p) => p.playerId == this.playerId);
+                if(initPlayer){
+                    syncPlayer.hp = global.planeMaxHp;
+                    syncPlayer.x = initPlayer.x;
+                    syncPlayer.y = initPlayer.y;
+                    syncPlayer.direction = initPlayer.direction;
+                }
             }
+            else{
+                console.log('----满血被攻击----');
+                syncPlayer.hp = 1;
+            }
+
+            colliderEventMap.set(other.node.name, {
+                playerId: this.playerId,
+                bulletId: other.node.name,
+                timeStamp: Date.now()
+            });
+            destroyedBulletSet.add(other.node.name);
+            console.log('---------缓存碰撞事件---------');
         }
     }
 }

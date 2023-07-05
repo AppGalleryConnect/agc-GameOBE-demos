@@ -124,3 +124,78 @@ export function printLog(logStr: string) {
 export function errorMessage(error: any) {
     return (error && error.code && error.message) ? ":" + error.code + " | " + error.message : "";
 }
+
+/**
+ * 通过文件的arrayBuffer获取文件的sha256值
+ * @param arrayBuffer
+ */
+export async function getFileHash(arrayBuffer: ArrayBuffer) {
+    // Blob转ArrayBuffer
+    // const arrayBuffer = await blob.arrayBuffer();
+    // 计算消息的哈希值
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    // 将缓冲区转换为字节数组
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    // 将字节数组转换为十六进制字符串 (hashHex)
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+
+export function download(remoteUrl: string) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = async function (e) {
+            if (xhr.readyState != 4) {
+                return;
+            }
+            if (xhr.status == 200) {
+                const response = xhr.response;
+                if (response) {
+                    /*const blob = new Blob([response], {
+                        type: 'application/zip,charset-UTF-8',
+                    });*/
+
+                    /*// H5解决方案
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = decodeURI(fileName);
+                    link.click();
+                    URL.revokeObjectURL(url);*/
+
+                    resolve(response);
+                }
+                else {
+                    reject({
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                    });
+                }
+            }
+        };
+
+        xhr.onerror = function (e) {
+            console.log('----下载出错----' + e);
+            reject(e);
+        };
+
+        xhr.open('GET', remoteUrl, true);
+        xhr.responseType = 'arraybuffer';
+        xhr.send();
+    });
+}
+
+/**
+ * 时间戳转Date
+ * @param milliSecond
+ */
+export function getDate(milliSecond: number){
+    let date = new Date(milliSecond);
+    let year = date.getFullYear() + '-';
+    let month = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+    let day = date.getDate() + ' ';
+    let hour = date.getHours() + ':';
+    let minutes = date.getMinutes() + ':';
+    let second = date.getSeconds();
+    return year + month + day + hour + minutes + second;
+}

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 import * as Util from "../../util";
 import global from "../../global";
 import Dialog from "../comp/Dialog";
+import {LockType} from "../commonValue";
 
 // Learn TypeScript:
 //  - https://docs.cocos.com/creator/manual/en/scripting/typescript.html
@@ -44,6 +45,9 @@ export default class roominfo extends cc.Component {
 
     @property(cc.Prefab)
     dialogPrefab: cc.Prefab = null;
+
+    @property(cc.Toggle)
+    isLockRoom: cc.Toggle = null;
 
     start() {
         this.initListener();
@@ -87,7 +91,9 @@ export default class roominfo extends cc.Component {
                 matchParams: {
                     'matchRule': global.matchRule,
                     'matchRule2': global.matchRule,
-                }
+                },
+                customRoomProperties: '',
+                isLock: this.isLockRoom.isChecked ? LockType.Locked : LockType.UnLocked
             },
             {customPlayerStatus: 0, customPlayerProperties: "111"}).then((room) => {
             // 创建房间成功
@@ -105,5 +111,4 @@ export default class roominfo extends cc.Component {
         // 关闭对话框
         Dialog.close();
     }
-
 }

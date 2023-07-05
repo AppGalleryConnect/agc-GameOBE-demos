@@ -19,10 +19,10 @@ using Com.Huawei.Game.Gobes;
 using UnityEngine.UI;
 using System;
 using Com.Huawei.Game.Gobes.Config;
-using Com.Huawei.Game.Gobes.SDKLog;
 using Com.Huawei.Game.Gobes.Store;
 using Com.Huawei.Game.Gobes.Utils;
 using NLog;
+using LogLevel = Com.Huawei.Game.Gobes.Utils.LogLevel;
 
 public class Home : MonoBehaviour
 {
@@ -44,6 +44,14 @@ public class Home : MonoBehaviour
     public InputField handleFrameRateInput;
     public Text EnvName;
 
+#if !UNITY_WEBGL || UNITY_EDITOR
+    public static NLog.Logger runLogger = LogManager.GetLogger("runLog");
+
+    public static NLog.Logger sdkDebuggerLogger = NLog.LogManager.GetLogger("sdkDebuggerLog");
+
+    public static NLog.Logger requestOutLogger = NLog.LogManager.GetLogger("requestOutLog");
+#endif
+
     public Client Client;
     // Start is called before the first frame update
     void Start()
@@ -55,9 +63,43 @@ public class Home : MonoBehaviour
     // 初始化SDK日志
     void InitSDKLog() {
         if (!Config.isOpenSDKLog) return;
-        
-        SDKDebugLogger.LogCallBack = log => Debug.Log(log);
-        SDKDebugLogger.APILogCallBack = apiLog => Debug.Log(apiLog);
+        SDKDebugLogger.SDKLogLevel = LogLevel.DEBUG;
+#if UNITY_WEBGL || UNITY_EDITOR
+        SDKDebugLogger.LogCallBack = (log, level) =>
+        {
+            switch (level)
+            {
+                case LogLevel.ERROR:
+                    Debug.LogError(log);
+                    break;
+                default:
+                    Debug.Log(log);
+                    break;
+            }
+        };
+        SDKDebugLogger.APILogCallBack = apilog => { Debug.Log(apilog);};
+#else
+        SDKLog.SDKLogTarget = "file";
+        SDKLog.InitSDKLog(NLog.LogLevel.Debug);
+        SDKDebugLogger.LogCallBack = (log, level) =>
+        {
+            switch (level)
+            {
+                case LogLevel.ERROR:
+                    runLogger.Error(log);
+                    break;
+                case LogLevel.DEBUG:
+                    runLogger.Debug(log);
+                    break;
+                default:
+                    sdkDebuggerLogger.Info(log);
+                    break;
+            }
+        };
+        SDKDebugLogger.APILogCallBack = apilog => { requestOutLogger.Info(apilog);};
+
+#endif
+
         SDKCommonConfig.GOBE_STORAGE_PATH = Application.persistentDataPath +"/gobe";
     }
 
@@ -73,8 +115,6 @@ public class Home : MonoBehaviour
         ClientSecrectInput.onValueChanged.AddListener(delegate { OnClientSecretChanged(1); });
         MatchCodeDropDown.onValueChanged.AddListener(delegate { OnMatchCodeChanged(0); });
         MatchCodeInput.onValueChanged.AddListener(delegate { OnMatchCodeChanged(1); });
-
-
     }
     void InitSDK()
     {
@@ -84,7 +124,6 @@ public class Home : MonoBehaviour
             return;
         }
         ChooseOpenIdType();
-
         Debug.Log("openId:"+Config.openId);
         Debug.Log("SDK 需要初始化");
         Global.gameId = GameIdDropDown.value == 0 ? GameIdInput.text : GameIdDropDown.options[GameIdDropDown.value].text.Split('(')[0];
@@ -97,7 +136,7 @@ public class Home : MonoBehaviour
         }
         Debug.Log("SDK 正在初始化"+Global.handleFrameRate);
         SDKLogConfig.SDKLogLevel = "Debug";
-        SDKLog.InitSDKLog(LogLevel.FromString(SDKLogConfig.SDKLogLevel));
+        SDKDebugLogger.SDKLogLevel = LogLevel.DEBUG;
         RtsaConfig.LogLevel = 3;
         ClientConfig clientConfig = new ClientConfig()
         {
@@ -191,7 +230,6 @@ public class Home : MonoBehaviour
             Global.client.Destroy();
             Debug.Log("鉴权失败"+baseResponse.RtnCode+"|"+baseResponse.Msg);
             OpenDialog("鉴权失败"+Util.ErrorMessage(baseResponse));
-
         }
 
     }
@@ -247,6 +285,8 @@ public class Home : MonoBehaviour
         if (res.RtnCode == 0)
         {
             Global.reconnectState = res.RoomInfo.RoomStatus;
+            Global.room = res.Room;
+            Global.player = res.Room._player;
         }
         else
         {

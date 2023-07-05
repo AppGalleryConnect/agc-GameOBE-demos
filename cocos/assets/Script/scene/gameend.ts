@@ -19,6 +19,7 @@ import global from "../../global";
 import ReopenGame from "../comp/ReopenGame";
 import Dialog from "../comp/Dialog";
 import {PlayerInfo, Room, RecvFromServerInfo} from "../../GOBE/GOBE";
+import {GameSceneType} from "../function/FrameSync";
 
 const {ccclass, property} = cc._decorator;
 
@@ -72,6 +73,7 @@ export default class GameEnd extends cc.Component {
         if (!global.isTeamMode) {
             this.reopenGame();
         } else {
+            global.gameSceneType = GameSceneType.FOR_NULL;
             cc.director.loadScene("hall");
         }
     }
@@ -84,10 +86,12 @@ export default class GameEnd extends cc.Component {
                     cc.director.loadScene("room");
                 } else {
                     global.roomType = RoomType.NULL;
+                    global.gameSceneType = GameSceneType.FOR_NULL;
                     cc.director.loadScene("hall");
                 }
             }).catch((e) => {
                 Util.printLog("update err: " + e);
+                global.gameSceneType = GameSceneType.FOR_NULL;
                 cc.director.loadScene("hall");
             });
         }, () => {
@@ -95,6 +99,7 @@ export default class GameEnd extends cc.Component {
                 // 退出房间成功
                 Util.printLog("退出房间成功");
                 global.roomType = RoomType.NULL;
+                global.gameSceneType = GameSceneType.FOR_NULL;
                 cc.director.loadScene("hall");
             }).catch((e) => {
                 // 退出房间失败

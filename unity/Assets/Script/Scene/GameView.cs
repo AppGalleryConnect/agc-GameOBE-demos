@@ -33,6 +33,12 @@ public class GameView : MonoBehaviour {
 
     // 云朵初始帧
     private static int CloudFirstFrame = 100;
+    
+    private static volatile int RequestSize = 0;
+
+    private static bool isRequestingFrame = false;
+    
+    private static int lastUsedFrameId = 0;
 
     // 出现云朵的频次
     private static readonly int _frequency = 50;
@@ -48,6 +54,8 @@ public class GameView : MonoBehaviour {
     private float count = 0;
 
     public static List<ServerFrameMessage> frameMessages = new List<ServerFrameMessage>();
+    
+    public static List<ServerFrameMessage> replayframeMessages = new List<ServerFrameMessage>();
 
     // Start is called before the first frame update
     void Start() {
@@ -76,7 +84,16 @@ public class GameView : MonoBehaviour {
                 ReConnect();
             }
         }
-        BatchRecvFrame(frameMessages);
+
+        if (isRequestingFrame && RequestSize !=0)
+        {
+            BatchRecvReplayFrame(replayframeMessages);
+        }
+        else
+        {
+            BatchRecvFrame(frameMessages);
+        }
+
     }
 
     void InitView() {
@@ -187,7 +204,8 @@ public class GameView : MonoBehaviour {
 
     // 1秒60帧去处理服务端传过来的帧信息
     public static void RecvFrameHandle(ServerFrameMessage frame) {
-        long frameId = frame.CurrentRoomFrameId;
+        //当前请求的帧
+        int frameId = frame.CurrentRoomFrameId;
         Global.currentRoomFrameId =  frame.CurrentRoomFrameId;
         //显示圆圈，持续100帧秒后消失
         if(frameId % 150 == 0)
@@ -244,13 +262,91 @@ public class GameView : MonoBehaviour {
          if (frames != null && frames.Count > 0) {
              foreach (ServerFrameMessage frame in frames) {
                  if (frame != null) {
-                     frameMessages.Add(frame);//RecvFrameHandle(frame);
+                     if (isRequestingFrame && frame.IsReplay)
+                     {
+                         replayframeMessages.Add(frame);
+                     }
+                     else
+                     {
+                         lastUsedFrameId = lastUsedFrameId == 0 ? frame.CurrentRoomFrameId - 1 : lastUsedFrameId;
+                         // 当前缓存的最后一帧
+                         int beginFrameId = frameMessages.Count == 0?0:frameMessages[frameMessages.Count-1].CurrentRoomFrameId;
+                         beginFrameId = Math.Max(lastUsedFrameId, beginFrameId);
+                         // 接收的帧
+                         int frameId = frame.CurrentRoomFrameId;
+                         if (!Global.client.IsAutoFrame() && frameId - beginFrameId > 1)
+                         {
+                             //请求补帧
+                             if (RequestSize > 1000)
+                             {
+                                 // 分批请求
+                                 double count = Math.Floor((double) RequestSize / 1000);
+                                 for (int i = 0; i < count; i++)
+                                 {
+                                     Global.room.SendRequestFrame(beginFrameId, 1000, res =>
+                                     {
+                                         if (res == 0)
+                                         {
+                                             RequestSize = RequestSize+ 1000;
+                                             beginFrameId = beginFrameId + 1000;
+                                             isRequestingFrame = true;
+                                             Debug.Log("成功发送补帧请求"+"begin:"+beginFrameId+"RequestSize:"+1000);
+                                             SDKDebugLogger.Log("SendRequestFrame Success,beginFrameId={0},RequestSize={1}",beginFrameId,1000);
+                                         }
+                                     });
+                                 }
+                             }
+                             if (frameId - beginFrameId > 0)
+                             {
+                                 Global.room.SendRequestFrame(beginFrameId,frameId - beginFrameId, res =>
+                                 {
+                                     if (res == 0)
+                                     {
+                                         RequestSize = RequestSize+ (frameId - beginFrameId);
+                                         isRequestingFrame = true;
+                                         Debug.Log("成功发送补帧请求"+"begin:"+beginFrameId+"RequestSize:"+(frameId - beginFrameId));
+                                         SDKDebugLogger.Log("SendRequestFrame Success,beginFrameId={0},RequestSize={1}",beginFrameId,(frameId - beginFrameId));
+                                     }
+                                 });
+                             }
+                         }
+                         frameMessages.Add(frame);
+                     }
                  }
              }
          }
     }
 
     void BatchRecvFrame(List<ServerFrameMessage> frames)
+    {
+        if (frames != null && frames.Count > 0)
+        {
+            // 本地至少保留一帧
+            if (frames.Count>1)
+            {
+                Debug.Log("处理多帧++++++++++++++");
+                for (int i=0 ;i<Global.handleFrameRate;i++) {
+                    if (i<frames.Count)
+                    {
+                        RecvFrameHandle(frames[i]);
+                        lastUsedFrameId = frames[i].CurrentRoomFrameId;
+                        frames.RemoveAt(i);
+                        frameMessages = frames;
+                    }
+                }
+            }
+            else
+            {
+                if (frames[0] != null) {
+                    RecvFrameHandle(frames[0]);
+                    lastUsedFrameId = frames[0].CurrentRoomFrameId;
+                    frameMessages.Clear();
+                }
+            }
+        }
+    }
+    
+    void BatchRecvReplayFrame(List<ServerFrameMessage> frames)
     {
         if (frames != null && frames.Count > 0)
         {
@@ -262,7 +358,8 @@ public class GameView : MonoBehaviour {
                     {
                         RecvFrameHandle(frames[i]);
                         frames.RemoveAt(i);
-                        frameMessages = frames;
+                        replayframeMessages = frames;
+                        RequestSize = RequestSize - 1;
                     }
                 }
             }
@@ -270,13 +367,18 @@ public class GameView : MonoBehaviour {
             {
                 if (frames[0] != null) {
                     RecvFrameHandle(frames[0]);
-                    frameMessages.Clear();
+                    replayframeMessages.Clear();
+                    RequestSize = RequestSize - 1;
                 }
             }
 
         }
+
+        if (RequestSize == 0)
+        {
+            isRequestingFrame = false;
+        }
     }
-    
     // 解散房间
     void OnDismiss() {
         Debug.Log("广播--解散房间");

@@ -49,17 +49,22 @@ public class CreateRoom : MonoBehaviour
         playerConfig.CustomPlayerStatus = 0;
         playerConfig.CustomPlayerProperties = "";
 
-        Global.Room = Global.client.CreateRoom(createRoomConfig, playerConfig, response => {
+        Global.client.CreateRoom(createRoomConfig, playerConfig, response => {
             if (response.RtnCode != 0) {
                 Dialog dialog = Instantiate(Dailog);
                 dialog.Open("提示", "创建房间失败" + Util.ErrorMessage(response)); 
                 return;
             }
+            else
+            {
+                Global.Room = response.Room;
+                Global.player = response.Room._player;
+                Debug.Log(response.Room.roomInfo);
+            }
             // 跳转到房间
             Route.GoRoom();
         });
-        Global.player = Global.Room._player;
-        Debug.Log(Global.Room.roomInfo);
+        
     }
 
     // 点击取消创建房间按钮

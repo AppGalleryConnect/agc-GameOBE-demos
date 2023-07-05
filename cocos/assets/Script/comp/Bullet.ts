@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,42 +14,56 @@
  *  limitations under the License.
  */
 
+import {BulletData} from "../function/BulletList";
+import {CmdType, CollideTag, Direction, GameSceneType} from "../function/FrameSync";
 import global from "../../global";
-import {CollideTagEnum, frameSyncBulletList, FrameSyncCmd} from "../function/FrameSync";
-import * as Util from "../../util";
 
-const {ccclass, property} = cc._decorator;
+const {ccclass} = cc._decorator;
 /**
  * 子弹的逻辑
  */
 @ccclass
 export default class Bullet extends cc.Component {
 
-    @property
-    speed: number = 20;
-
-    isDie: boolean = false;
-
-    bullectId: number = 0;
+    bulletId: number = 0;
 
     playerId: string = "";
 
-    public initBullet(x = 0, y = 0, playerId, bulletId) {
-        this.bullectId = bulletId;
-        this.playerId = playerId;
-        // 获取父组件的 宽高
-        let width = this.node.parent.width;
-        let height = this.node.parent.height;
-        // 如果宽高超过父组件，销毁子弹
-        if(x > width || x < 0 || y > height || y < 0){
-            // 子弹数据销毁
-            frameSyncBulletList.bullets = frameSyncBulletList.bullets.filter(item => !(item.playerId === playerId && item.bulletId === bulletId));
-            return;
-        }else{
-            this.node.x = x;
-            this.node.y = y;
-        }
+    // 子弹飞行任务
+    private flyTask = null;
+    // 子弹飞行时的bullet信息
+    private bulletData: BulletData;
 
+    start() {
+        global.room.onStopFrameSync(() => this.onStopFrameSync());
+    }
+
+    public onStopFrameSync() {
+        clearInterval(this.flyTask);
+    }
+
+    public initBullet(bullet: BulletData) {
+        this.node.name = bullet.bulletId.toString();
+        this.bulletId = bullet.bulletId;
+        this.playerId = bullet.playerId;
+        this.node.x = bullet.x;
+        this.node.y = bullet.y;
+        this.bulletData = bullet;
+        if(global.gameSceneType == GameSceneType.FOR_GAME && !global.isRequestFrameStatus && bullet.playerId == global.playerId){
+            this.flyTask = setInterval(() => {
+                this.updateBulletPos(this.bulletData);
+            }, 200);
+        }
+    }
+
+    updatePos(bullet: BulletData) {
+        this.node.x = bullet.x;
+        this.node.y = bullet.y;
+    }
+
+    destroyBullet(){
+        clearInterval(this.flyTask);
+        this.node.destroy();
     }
 
     /**
@@ -57,29 +71,70 @@ export default class Bullet extends cc.Component {
      * @param other
      */
     onCollisionEnter (other, self) {
-        if(other.tag == CollideTagEnum.aircraft){
-            let otherTag: number = other.tag; // 碰到了谁
-            let selfTag: number = self.tag; // 自己的碰撞标签
-            let cmd: FrameSyncCmd = FrameSyncCmd.collide;
-            let playerId: string = this.playerId;
-            let bullectId: number = this.bullectId;
-            const data: Object = {
-                cmd, otherTag, selfTag, playerId, bullectId
-            };
-            let frameData: string = JSON.stringify(data);
-            try{
-                global.room.sendFrame(frameData);
-            }
-            catch (e) {
-                Util.printLog('Bullet onCollisionEnter sendFrame err: ' + e);
-            }
+        // 子弹碰到发射自己的飞机，不销毁
+        if(other.tag == CollideTag.plane && other.node.name != this.playerId){
+            console.log(`Bullet onCollisionEnter bulletId: ${this.bulletId}, selfTag: ${self.tag}, otherTag: ${other.tag}`);
+            clearInterval(this.flyTask);
+            this.node.destroy();
         }
     }
 
 
-    start () {
+    // 更新子弹位置
+    updateBulletPos(bullet: BulletData) {
+        if(!bullet){
+            return;
+        }
+        // 计算移动后的 x、y
+        let x: number = bullet.x;
+        let y: number = bullet.y;
+        switch (bullet.direction) {
+            case Direction.up:
+                y = Math.min(global.bulletMaxY, bullet.y + global.bulletStepPixel);
+                break;
+            case Direction.down:
+                y = Math.max(global.bulletSize, bullet.y - global.bulletStepPixel);
+                break;
+            case Direction.left:
+                x = Math.max(global.bulletSize, bullet.x - global.bulletStepPixel);
+                break;
+            case Direction.right:
+                x = Math.min(global.bulletMaxX, bullet.x + global.bulletStepPixel);
+                break;
+            // no default
+        }
+        // 子弹销毁
+        if((bullet.direction == Direction.up && y == global.bulletMaxY) ||
+            (bullet.direction == Direction.down && y == global.bulletSize) ||
+            (bullet.direction == Direction.left && x == global.bulletSize) ||
+            (bullet.direction == Direction.right && x == global.bulletMaxX)) {
+            let frameData: string = JSON.stringify({
+                cmd: CmdType.bulletDestroy,
+                playerId: bullet.playerId,
+                bulletId: bullet.bulletId,
+            });
+            console.log('----sendBulletDestroyFrame---' + frameData);
+            this.bulletData.x = x;
+            this.bulletData.y = y;
+            this.bulletData.needDestroy = true;
+            global.room.sendFrame(frameData);
+            clearInterval(this.flyTask);
+        }
+        // 子弹继续飞行
+        else {
+            let frameData: string = JSON.stringify({
+                cmd: CmdType.bulletFly,
+                playerId: bullet.playerId,
+                bulletId: bullet.bulletId,
+                x,
+                y,
+                direction:bullet.direction
+            });
+            console.log('----sendBulletFlyFrame---' + frameData);
 
+            this.bulletData.x = x;
+            this.bulletData.y = y;
+            global.room.sendFrame(frameData);
+        }
     }
-
-    // update (dt) {}
 }

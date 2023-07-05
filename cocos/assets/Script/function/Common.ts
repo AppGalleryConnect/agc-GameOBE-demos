@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 import global from "../../global";
-import * as Util from "../../util";
 import {RoomType} from "../commonValue";
 
 

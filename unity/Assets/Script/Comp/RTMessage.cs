@@ -22,6 +22,29 @@ public class RTMessage
     public string platform  { get; set; }
 }
 
+public class Position
+{
+    public int x { get; set; }
+    public int y { get; set; }
+}
+
+public class PlaneInitInfo
+{
+    public string playerId { get; set; }
+    public Position position { get; set; }
+    public FrameSync.FrameSyncCmd direction { get; set; }
+}
+
+public class RTInitGameMessage
+{
+    public string type { get; set; }
+    public int planeSize { get; set; }
+    public int planeHp { get; set; }
+    public int bulletSize  { get; set; }
+    public int bulletSpeed  { get; set; }
+    public PlaneInitInfo[] playerArr  { get; set; }
+}
+
 public class RTSendGameEnd
 {
     public string type { get; set; }

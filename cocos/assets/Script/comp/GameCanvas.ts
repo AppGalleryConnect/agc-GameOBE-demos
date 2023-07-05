@@ -22,7 +22,15 @@
  *
  *  2021.12.15-Changed method initPlayersPool
  *  2021.12.15-Changed method setPlayers
- *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
+ *  2023.06.28-Changed method getFromPlayersPool
+ *  2023.06.28-Deleted method initBullectPool
+ *  2023.06.28-Deleted method getFromBullectPool
+ *  2023.06.28-Changed method start
+ *  2023.06.28-Changed method setClouds
+ *  2023.06.28-Changed method setPlayers
+ *  2023.06.28-Changed method setBullet
+ *  2023.06.28-Add method destroyBullet
+ *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 // Learn TypeScript:
@@ -40,11 +48,15 @@ import Cloud from "./Cloud";
 import {CloudData} from "../function/CloudList";
 import {BulletData} from "../function/BulletList";
 import Bullet from "./Bullet";
+import {
+    destroyedBulletSet,
+    frameSyncPlayerInitList
+} from "../function/FrameSync";
+import global from "../../global";
 
 const {ccclass, property} = cc._decorator;
 let playersPool: cc.NodePool = null;
 let cloudsPool: cc.NodePool = null;
-let bullectsPool: cc.NodePool = null;
 // 初始化对象池
 function initPlayersPool(playerPrefab: cc.Prefab) {
     if (playersPool) {
@@ -56,18 +68,20 @@ function initPlayersPool(playerPrefab: cc.Prefab) {
 }
 
 function getFromPlayersPool(playerPrefab: cc.Prefab) {
-    let player = null;
+    /*let player;
     if (playersPool.size() > 0) {
         player = playersPool.get();
     } else {
         player = cc.instantiate(playerPrefab);
     }
 
+    return player;*/
+    let player = cc.instantiate(playerPrefab);
     return player;
 }
 
 function getFromCloudsPool(cloudPrefab: cc.Prefab) {
-    let cloud = null;
+    let cloud;
     if (cloudsPool != null && cloudsPool.size() > 0) {
         cloud = cloudsPool.get();
     } else {
@@ -78,29 +92,6 @@ function getFromCloudsPool(cloudPrefab: cc.Prefab) {
 
 function removeToPlayerPool(player) {
     playersPool.put(player);
-}
-
-// 初始化对象池
-function initBullectPool(bullectPrefab: cc.Prefab) {
-    if (bullectsPool) {
-        return;
-    }
-    bullectsPool = new cc.NodePool();
-    let bullect = cc.instantiate(bullectPrefab);
-    bullectsPool.put(bullect);
-}
-
-function getFromBullectPool(bullectPrefab: cc.Prefab) {
-    let bullect = null;
-    if (bullectsPool.size() > 0) {
-        bullect = bullectsPool.get();
-    } else {
-        bullect = cc.instantiate(bullectPrefab);
-    }
-    return bullect;
-}
-function removeToBulletPool(bullet) {
-    bullectsPool.put(bullet);
 }
 
 @ccclass
@@ -116,22 +107,20 @@ export default class GameCanvas extends cc.Component {
     circlePrefab: cc.Prefab = null;
 
     @property(cc.Prefab)
-    bullectPrefab: cc.Prefab = null;
+    bulletPrefab: cc.Prefab = null;
 
-    public players: Player[] = [];
+    public players: cc.Node[] = [];
     public clouds: Cloud[] = [];
-    public bullets: Bullet[] = [];
     public tileSize = 40;
     public cloudSize = 36;
     public maxX = 19; // x轴最大值
 
     start() {
         initPlayersPool(this.playerPrefab);
-        initBullectPool(this.bullectPrefab);
         cc.director.getCollisionManager().enabled = true;
     }
 
-    setClouds(clouds: CloudData<any>[], dt) {
+    setClouds(clouds: CloudData[], dt) {
         if (!Array.isArray(clouds)) {
             clouds = [];
         }
@@ -158,42 +147,55 @@ export default class GameCanvas extends cc.Component {
                 }
             });
         }
-
     }
 
-    setPlayers(playerData: PlayerData<any>[]) {
-        if (!Array.isArray(playerData)) {
-            playerData = [];
+    setPlayers(playerArr: PlayerData[]) {
+        if (!Array.isArray(playerArr)) {
+            playerArr = [];
         }
-        this.players.splice(playerData.length).forEach(player => removeToPlayerPool(player));
-        for (let i = this.players.length; i < playerData.length; i++) {
+        this.players.splice(playerArr.length).forEach(player => removeToPlayerPool(player));
+        for (let i = this.players.length; i < playerArr.length; i++) {
             this.players.push(getFromPlayersPool(this.playerPrefab));
         }
-        playerData.forEach((playerData, i) => {
+        playerArr.forEach((player, i) => {
             if (this.players[i]){
                 const playerView = this.players[i].getComponent(Player);
-                const {x, y} = this.convertPosition(playerData.x, playerData.y);
                 playerView.node.parent = this.node;
-                playerView.initPlayer(playerData.id, playerData.rotation, x, y, playerData.playerTeamId, playerData.robotName);
+                if(player.hp == 0 && player.isShoot) {
+                    let tempPlayer = frameSyncPlayerInitList.players.find(p => p.playerId == player.playerId);
+                    player.hp = global.planeMaxHp;
+                    player.x = tempPlayer.x;
+                    player.y = tempPlayer.y;
+                }
+                playerView.initPlayer(player);
             }
         });
     }
 
-    setBullets(bulletData: BulletData<any>[]) {
-        if (!Array.isArray(bulletData)) {
-            bulletData = [];
-        }
-        this.bullets.splice(bulletData.length).forEach(player => removeToBulletPool(player));
-        for (let i = this.bullets.length; i < bulletData.length; i++) {
-            this.bullets.push(getFromBullectPool(this.bullectPrefab));
-        }
-        bulletData.forEach((bulletData, i) => {
-            if (this.bullets[i]){
-                const bulletView = this.bullets[i].getComponent(Bullet);
-                bulletView.node.parent = this.node;
-                bulletView.initBullet(bulletData.x, bulletData.y, bulletData.playerId, bulletData.bulletId);
+    setBullet(bulletData: BulletData) {
+        let bullet = this.node.getChildByName(bulletData.bulletId.toString());
+        if(bullet) {
+            console.log('---------移动子弹------');
+            let bulletView = bullet.getComponent(Bullet);
+            bulletView.updatePos(bulletData);
+        } else {
+            // 若为刚销毁的子弹，说明已经发生过碰撞，无需再创建了
+            if(!destroyedBulletSet.has(bulletData.bulletId)) {
+                console.log('---------创建子弹------');
+                bullet = cc.instantiate(this.bulletPrefab);
+                bullet.parent = this.node;
+                let bulletView = bullet.getComponent(Bullet);
+                bulletView.initBullet(bulletData);
             }
-        });
+        }
+    }
+
+    destroyBullet(bulletId: string) {
+        let bullet = this.node.getChildByName(bulletId);
+        if(bullet) {
+            let bulletView = bullet.getComponent(Bullet);
+            bulletView.destroyBullet();
+        }
     }
 
     convertPosition(mapX: number, mapY: number) {

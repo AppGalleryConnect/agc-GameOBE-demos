@@ -1,0 +1,8 @@
+{
+  "name": "gameobecocos-demo",
+  "version": "13.6.1",
+  "description": "Game Online Battle Engine Demo for Cocos",
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}

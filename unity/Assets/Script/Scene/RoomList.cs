@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Com.Huawei.Game.Gobes;
@@ -104,8 +105,8 @@ public class RoomList : MonoBehaviour
         };
         try
         {
-            Global.room = Global.client.JoinRoom(joinRoomReq, playerInfo, JoinRoomCallback);
-            Global.player = Global.room._player;
+            Global.client.JoinRoom(joinRoomReq, playerInfo, JoinRoomCallback);
+            
         }
         catch (SDKException e)
         {
@@ -143,8 +144,7 @@ public class RoomList : MonoBehaviour
         };
         try
         {
-            Global.room = Global.client.JoinRoom(joimRoomReq, playerInfo, JoinRoomCallback);
-            Global.player = Global.room._player;
+        	Global.client.JoinRoom(joimRoomReq, playerInfo, JoinRoomCallback);
         }
         catch (SDKException e)
         {
@@ -195,6 +195,9 @@ public class RoomList : MonoBehaviour
     {
         if (res.RtnCode == 0)
         {
+            Debug.Log("加入房间GoRoom");
+            Global.room = res.Room;
+            Global.player = Global.room._player;
             Route.GoRoom();
         }
         else
@@ -220,7 +223,11 @@ public class RoomList : MonoBehaviour
         {
             RoomType = Global.matchRule,
             Limit = limit,
-            Sync = true
+            Sync = true,
+            RoomTypeList = new List<string>
+            {
+                "0","1"
+            }
         };
         Global.client.GetAvailableRooms(getRoomReq, RenderList);
     }
@@ -231,7 +238,11 @@ public class RoomList : MonoBehaviour
         {
             RoomType = Global.matchRule,
             Limit = limit,
-            Sync = false
+            Sync = false,
+            RoomTypeList = new List<string>
+            {
+                "0","1"
+            }
         };
         Global.client.GetAvailableRooms(getRoomReq, RenderList);
     }

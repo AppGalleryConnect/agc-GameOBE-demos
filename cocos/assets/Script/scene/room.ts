@@ -22,6 +22,7 @@ import {RoomType} from "../commonValue";
 import {setRoomType, sleep} from "../function/Common";
 import Button = cc.Button;
 import Label = cc.Label;
+import {GameSceneType} from "../function/FrameSync";
 
 const {ccclass, property} = cc._decorator;
 
@@ -74,6 +75,12 @@ export default class Room extends cc.Component {
     @property(cc.Node)
     loadingTip: cc.Node = null;
 
+    @property(cc.Toggle)
+    isLockRoom: cc.Toggle = null;
+
+    @property(cc.Label)
+    isLockText: cc.Label = null;
+
     // 实际的房主的item节点
     ownerItem = null;
 
@@ -118,6 +125,7 @@ export default class Room extends cc.Component {
         this.enableReadyBtn.on(cc.Node.EventType.TOUCH_START, () => this.ready());
         this.cancelReadyBtn.on(cc.Node.EventType.TOUCH_START, () => this.cancelReady());
         this.sendBtn.on(cc.Node.EventType.TOUCH_START, () => this.sendContent());
+        this.isLockRoom.node.on(cc.Node.EventType.TOUCH_START, () => this.lockRoom());
         global.room.onJoin(() => this.onJoining());
         global.room.onLeave((playerInfo) => this.onLeaving(playerInfo));
         global.room.onDismiss(() => this.onDismiss());
@@ -127,7 +135,7 @@ export default class Room extends cc.Component {
         global.room.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
         global.room.onConnect((playerInfo) => this.onConnect(playerInfo));
         // SDK 开始帧同步
-        global.room.onStartFrameSync(() => this.onStartFrameSync())
+        global.room.onStartFrameSync(() => this.onStartFrameSync());
         global.room.onRecvFromServer((receiveFromServerInfo) => this.onReceiveFromGameServer(receiveFromServerInfo));
     }
 
@@ -217,6 +225,7 @@ export default class Room extends cc.Component {
     onRoomPropertiesChange(roomInfo: RoomInfo) {
         // TODO拿到roomInfo重置本地数据，刷新页面
         console.log('onRoomPropertiesChange ' + JSON.stringify(roomInfo));
+        this.isLockRoom.isChecked = roomInfo.isLock == 1;
     }
 
     // 准备
@@ -231,6 +240,13 @@ export default class Room extends cc.Component {
         Util.printLog(`取消准备`);
         let unready = 0;
         global.player.updateCustomStatus(unready);
+    }
+
+    // 锁定与解锁房间
+    lockRoom() {
+        if (global.room && global.room.ownerId === global.room.playerId) {
+            global.room.updateRoomProperties({isLock: !this.isLockRoom.isChecked ? 1 : 0});
+        }
     }
 
     // 踢人
@@ -293,12 +309,13 @@ export default class Room extends cc.Component {
         this.initDefaultBtn(
             roomInfo.ownerId === global.playerId,
             roomInfo.players.length,
-            readyStatus === 1
+            readyStatus === 1,
+            roomInfo.isLock == 1
         );
     }
 
     // 初始化默认按钮
-    initDefaultBtn(isOwner: boolean, playerCount: number, commonPlayerReady: boolean) {
+    initDefaultBtn(isOwner: boolean, playerCount: number, commonPlayerReady: boolean, isLock: boolean) {
         // 房间只有一人时，肯定为房主
         if(playerCount === 1){
             this.enableReadyBtn.active = false;
@@ -312,11 +329,19 @@ export default class Room extends cc.Component {
             // 房主和非房主均有离开按钮
             this.setLeaveBtn(true,true);
             this.playerItem.getChildByName('player_ready_status').getComponent(Label).string = "";
+            // 房主显示是否锁定房间的checkBox
+            this.isLockRoom.node.active = true;
+            this.isLockRoom.isChecked = isLock;
+            this.isLockText.string = '是否锁定房间';
         } else {
             // 房间有两人时，得看是初始化房主还是非房主的界面
             if (isOwner) {
                 this.enableReadyBtn.active = false;
                 this.cancelReadyBtn.active = false;
+                // 房主显示是否锁定房间的checkBox
+                this.isLockRoom.node.active = true;
+                this.isLockRoom.isChecked = isLock;
+                this.isLockText.string = '是否锁定房间';
                 // 加载状态时，非房主肯定是已准备状态
                 if (this.isLoadingStatus) {
                     this.setStartBtn(true);
@@ -334,10 +359,13 @@ export default class Room extends cc.Component {
                 // 非房主
                 this.enableReadyBtn.active = !commonPlayerReady;
                 this.cancelReadyBtn.active = commonPlayerReady;
+                // 非房主不显示是否锁定房间的checkBox
+                this.isLockRoom.node.active = false;
+                this.isLockText.string = isLock ? '房间已锁定' : '房间未锁定';
                 this.setStartBtn(false);
                 this.setKickBtn(false);
                 this.setDismissBtn(false);
-                this.setLeaveBtn(true, !commonPlayerReady)
+                this.setLeaveBtn(true, !commonPlayerReady);
             }
             this.playerItem.getChildByName('player_ready_status').getComponent(Label).string = commonPlayerReady ? "已准备" : "未准备";
         }
@@ -476,12 +504,13 @@ export default class Room extends cc.Component {
             if (global.playerId == player.playerId) {
                 if (player.customPlayerProperties != null && player.customPlayerProperties=="watcher")
                 {
-                    global.isWatcher = true;
+                    global.gameSceneType = GameSceneType.FOR_WATCHER;
                     cc.director.loadScene("game");
                     return;
                 }
             }
         });
+        global.gameSceneType = GameSceneType.FOR_GAME;
         cc.director.loadScene("game");
     }
 
@@ -556,6 +585,7 @@ export default class Room extends cc.Component {
         if (this.ownerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress === 1 &&
             this.playerItem.getChildByName('progressBar').getComponent(cc.ProgressBar).progress === 1) {
             this.isLoadingStatus = false;
+            global.gameSceneType = GameSceneType.FOR_GAME;
             cc.director.loadScene("game");
         }
     }

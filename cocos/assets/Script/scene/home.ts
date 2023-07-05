@@ -36,7 +36,7 @@ export default class Home extends cc.Component {
     @property(cc.EditBox)
     accessTokenEdit: cc.EditBox = null;
 
-    start() {
+    async start() {
         this.initDialog();
         this.initListener();
     }
@@ -62,6 +62,7 @@ export default class Home extends cc.Component {
             clientId: configs.clientId,
             clientSecret: configs.clientSecret,
             accessToken: this.accessTokenEdit.string,
+            appVersion: '1.10.111',
         };
         if (cc.sys.ANDROID === cc.sys.platform) {
             clientConfig = Object.assign(clientConfig, {
@@ -123,6 +124,9 @@ export default class Home extends cc.Component {
                 global.roomType = RoomType.NULL;
                 cc.director.loadScene("hall");
             }
+
+            window.GOBE.Logger.level = window.GOBE.LogLevel.INFO;
+            Util.printLog('init success');
         } else {
             Util.printLog('init failed');
         }

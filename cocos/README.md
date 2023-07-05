@@ -40,7 +40,7 @@ To use functions provided by packages in example, you need to set related parame
 The following describes parameters in \assets\config.ts:
 
 | parameters | describes |
-   |:----- |:-------|
+|:----- |:-------|
 | gameId      |    Game ID, Identify a game. |
 | openId      |  Distinguish between different users. |
 | grantType   |  Authentication mode, the default is "client_credentials". |
@@ -73,12 +73,11 @@ The following is a brief description of the scene design files and corresponding
   \assets\Scene\home.fire  
   \assets\Script\scene\home.ts
   
-
-* In these scenes, player can perform five operations. If the player wants to join the room, the player needs to select the area that he wants to enter, which now includes the rookie area and the expert area. If you want to perform a quick match, you can click the Quick Match button. The system will automatically match the right players for you; Players can also choose to create or join teams and play with friends.
+* In these scenes, player can perform six operations. If the player wants to join the room, the player needs to select the area that he wants to enter, which now includes the rookie area and the expert area. If you want to perform a quick match, you can click the Quick Match button. The system will automatically match the right players for you; Players can also choose to create or join teams and play with friends;Finally players can replay their entire games from Game Records.
 
   \assets\Scene\hall.fire  
   \assets\Script\scene\hall.ts
- 
+
 * After the player enters the match Page the player can choose to join a room or create a room, or select Quick Match to enter the appropriate room to quickly start the game.
 
   \assets\Scene\match.fire  
@@ -99,19 +98,22 @@ The following is a brief description of the scene design files and corresponding
 
   \assets\Scene\team.fire  
   \assets\Script\scene\team.ts
-  
+
   \assets\Scene\teaminfo.fire  
   \assets\Script\scene\teaminfo.ts
-  
+
   \assets\Scene\teamroom.fire  
   \assets\Script\scene\teamroom.ts
-  
+
+* These pages are used to show and replay game historical records. When you click one item, you would enter the game scene.
+
+  \assets\Scene\recordLIst.fire  
+  \assets\Script\scene\recordLIst.ts
 
 * After the homeowner clicks to start the game, the player enters the game. Then, the game begins.
 
   \assets\Scene\game.fire  
   \assets\Script\scene\game.ts
-  
 
 <a id="License"></a>
 

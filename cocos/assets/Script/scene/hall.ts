@@ -19,6 +19,7 @@ import * as Util from "../../util";
 import Dialog from "../comp/Dialog";
 import Reloading from "../comp/Reloading";
 import config from "../../config";
+import {LockType} from "../commonValue";
 
 const {ccclass, property} = cc._decorator;
 
@@ -34,13 +35,18 @@ export default class Hall extends cc.Component {
     // 组队匹配
     @property(cc.Sprite)
     teamMatchBtn: cc.Sprite = null;
-    // 加入队伍
-    @property(cc.Sprite)
-    joinTeamBtn: cc.Sprite = null;
 
     // 快速匹配（可用）
     @property(cc.Sprite)
     fastMatchBtn: cc.Sprite = null;
+
+    // 加入队伍
+    @property(cc.Sprite)
+    joinTeamBtn: cc.Sprite = null;
+
+    // 战绩回放
+    @property(cc.Sprite)
+    recordBtn: cc.Sprite = null;
 
     // 正在匹配加载界面
     @property(cc.Prefab)
@@ -78,10 +84,23 @@ export default class Hall extends cc.Component {
         this.teamMatchBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.onTeamMatchBtn());
         this.joinTeamBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.onJoinTeamBtn());
         this.fastMatchBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.onMatchPlayer());
+        this.recordBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.onRecordList());
 
         // 绑定在线/组队匹配监听事件
         global.client.onMatch.clear();
         global.client.onMatch((onMatchResponse) => this.onMatch(onMatchResponse));
+    }
+
+    /**
+     * “战绩回放”按钮点击事件
+     */
+    onRecordList() {
+        cc.director.loadScene('recordList');
+        /*global.client.queryRecordList(1, 8).then((res) => {
+            console.log('queryRecordList success res: ' + JSON.stringify(res));
+        }).catch((err) => {
+            console.log('queryRecordList err: ' + err);
+        })*/
     }
 
     /**
@@ -120,7 +139,7 @@ export default class Hall extends cc.Component {
             maxPlayers: 2,
             groupName: "快乐小黑店",
             customGroupProperties: "",
-            isLock: 0,    // 是否禁止加入 0:不禁止 1:禁止 默认0
+            isLock: LockType.UnLocked,    // 是否禁止加入 0:不禁止 1:禁止 默认0
             isPersistent: 0,    // 是否持久化 0:不持久化 1:持久化 默认0
         }, {
             customPlayerStatus: 0,
@@ -200,9 +219,9 @@ export default class Hall extends cc.Component {
     cancelTeamMatch() {
         global.client.cancelMatch().then(() => {
             global.isOnlineMatch = false;
-            Util.printLog('取消匹配成功')
+            Util.printLog('取消匹配成功');
         }).catch(() => {
-            Util.printLog('取消匹配失败')
+            Util.printLog('取消匹配失败');
         })
     }
 }

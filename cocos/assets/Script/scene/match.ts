@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -105,13 +105,21 @@ export default class Match extends cc.Component {
     async onMatchRoom() {
         this.lockSubmit = true;
         Reloading.open("匹配中。。。", false);
+        let customRoomProp = {
+            planeSize: global.planeSize,          // 飞机尺寸，圆形，半径为15像素
+            planeHp: global.planeMaxHp,           // 飞机最大生命值
+            bulletSize: global.bulletSize,        // 子弹尺寸，圆形，半径为4像素
+            bulletSpeed: global.bulletStepPixel,  // 子弹速度，400像素每秒
+            bgMaxX: global.bgMaxX,                // 飞行背景x最大值
+            bgMaxY: global.bgMaxY                 // 飞行背景y最大值
+        }
         global.client.matchRoom({
             matchParams: {
                 'matchRule': global.matchRule,
                 'matchRule2': global.matchRule,
             },
             roomType: global.matchRule,
-            customRoomProperties: global.matchRule,
+            customRoomProperties: JSON.stringify(customRoomProp),
             maxPlayers: 2,
         }, {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
             Reloading.close();

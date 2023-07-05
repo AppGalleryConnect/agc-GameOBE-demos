@@ -20,6 +20,7 @@ import Dialog from "../comp/Dialog";
 import {PlayerInfo} from "../../GOBE/GOBE";
 import {RoomType} from "../commonValue";
 import {setRoomType, sleep} from "../function/Common";
+import {GameSceneType} from "../function/FrameSync";
 
 export enum PlayerOnline {
     online = 1,  // 在线
@@ -102,6 +103,7 @@ export default class AsymmetricRoom extends cc.Component {
         this.initListener();
         this.initSchedule();
         if(global.room.isSyncing){
+            global.gameSceneType = GameSceneType.FOR_GAME;
             cc.director.loadScene("game");
         }
     }
@@ -488,6 +490,7 @@ export default class AsymmetricRoom extends cc.Component {
 
     onStartFrameSync() {
         Util.printLog("广播--开始帧同步");
+        global.gameSceneType = GameSceneType.FOR_GAME;
         cc.director.loadScene("game");
     }
 

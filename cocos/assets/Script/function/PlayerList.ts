@@ -21,19 +21,22 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  *  2021.12.15-Changed interface PlayerData
- *             Copyright(C)2021. Huawei Technologies Co., Ltd. All rights reserved
+ *  2021.06.28-Changed interface PlayerData
+ *  2021.06.28-Changed interface PlayerList
+ *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
  */
 
-export interface PlayerData<T> {
+export interface PlayerData {
+    playerId: string,
     x: number,
     y: number,
-    id: string,
-    rotation: number,
-    playerTeamId: string,
+    hp: number,
+    isShoot: boolean,
+    direction: number,
+    teamId: string,
     robotName: string,
-    state?: T,
 }
 
-export interface PlayerList<T> {
-    players: PlayerData<T>[],
+export interface PlayerList {
+    players: PlayerData[],
 }

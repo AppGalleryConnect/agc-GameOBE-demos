@@ -296,7 +296,7 @@ public class Team : MonoBehaviour
         Global.group.GetGroupDetail(response => {
             if (response.RtnCode == 0)
             {
-                Global.group = new Group(response.GroupInfo);
+                Global.group = new Group(Global.client, response.GroupInfo);
                 players = response.GroupInfo.Players;
                 // 组队小队匹配
                 TeamMatchGroup(players);
@@ -340,6 +340,15 @@ public class Team : MonoBehaviour
                 // 匹配成功
                 else if ((int) ErrorCode.COMMON_OK == response.RtnCode) {
                     Debug.Log("MatchGroup start");
+                    // 如果是队长就弹出匹配中
+                    if (isOwner)
+                    {
+                        UnityMainThread.wkr.AddJob(() => {
+                            Reloading loading = Instantiate(Loading);
+                            loading.Open("组队匹配中...");
+                        });
+                    }
+                    
                 }
                 else
                 // 匹配超时等其他匹配异常
@@ -382,7 +391,7 @@ public class Team : MonoBehaviour
    void UpdateGroup() {
         Global.group.GetGroupDetail(response => {
             if (response.RtnCode == 0) {
-                Global.group = new Group(response.GroupInfo);
+                Global.group = new Group(Global.client, response.GroupInfo);
                 Debug.Log("获取最新的队伍信息成功");
                 //有人加入队伍，需要刷新页面
                 UnityMainThread.wkr.AddJob(InitView);

@@ -75,13 +75,13 @@
     "_active": true,
     "_components": [
       {
-        "__id__": 39
+        "__id__": 45
       },
       {
-        "__id__": 40
+        "__id__": 46
       },
       {
-        "__id__": 41
+        "__id__": 47
       }
     ],
     "_prefab": null,
@@ -157,12 +157,15 @@
       },
       {
         "__id__": 32
+      },
+      {
+        "__id__": 38
       }
     ],
     "_active": true,
     "_components": [
       {
-        "__id__": 38
+        "__id__": 44
       }
     ],
     "_prefab": null,
@@ -355,7 +358,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "ordinary_room_circle",
+    "_name": "ordinary_room_btn",
     "_objFlags": 0,
     "_parent": {
       "__id__": 3
@@ -396,8 +399,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0,
-        282.513,
+        -90,
+        220,
         0,
         0,
         0,
@@ -570,7 +573,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "expert_room_circle",
+    "_name": "expert_room_btn",
     "_objFlags": 0,
     "_parent": {
       "__id__": 3
@@ -611,8 +614,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -3.024,
-        138.454,
+        90,
+        220,
         0,
         0,
         0,
@@ -785,7 +788,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "fast_match_circle",
+    "_name": "fast_match_btn",
     "_objFlags": 0,
     "_parent": {
       "__id__": 3
@@ -826,8 +829,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -3.024,
-        -2.651,
+        -90,
+        0,
         0,
         0,
         0,
@@ -1000,7 +1003,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "team_match_circle",
+    "_name": "team_match_btn",
     "_objFlags": 0,
     "_parent": {
       "__id__": 3
@@ -1041,8 +1044,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -3.024,
-        -142.017,
+        90,
+        0,
         0,
         0,
         0,
@@ -1215,7 +1218,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "join_team_circle",
+    "_name": "join_team_btn",
     "_objFlags": 0,
     "_parent": {
       "__id__": 3
@@ -1256,8 +1259,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -3.024,
-        -285.627,
+        -90,
+        -220,
         0,
         0,
         0,
@@ -1429,6 +1432,221 @@
     "sync": false
   },
   {
+    "__type__": "cc.Node",
+    "_name": "record_btn",
+    "_objFlags": 0,
+    "_parent": {
+      "__id__": 3
+    },
+    "_children": [
+      {
+        "__id__": 39
+      }
+    ],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 42
+      }
+    ],
+    "_prefab": {
+      "__id__": 43
+    },
+    "_opacity": 236.38500000000002,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 126,
+      "height": 126
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_trs": {
+      "__type__": "TypedArray",
+      "ctor": "Float64Array",
+      "array": [
+        90,
+        -220,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "_eulerAngles": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_skewX": 0,
+    "_skewY": 0,
+    "_is3DNode": false,
+    "_groupIndex": 0,
+    "groupIndex": 0,
+    "_id": "59Bx/bPe1Pqaq+TDucohGq"
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "label",
+    "_objFlags": 0,
+    "_parent": {
+      "__id__": 38
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 40
+      }
+    ],
+    "_prefab": {
+      "__id__": 41
+    },
+    "_opacity": 255,
+    "_color": {
+      "__type__": "cc.Color",
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 255
+    },
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 80,
+      "height": 50.4
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_trs": {
+      "__type__": "TypedArray",
+      "ctor": "Float64Array",
+      "array": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "_eulerAngles": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_skewX": 0,
+    "_skewY": 0,
+    "_is3DNode": false,
+    "_groupIndex": 0,
+    "groupIndex": 0,
+    "_id": "15o/IaYelFLalp7I1K3+1f"
+  },
+  {
+    "__type__": "cc.Label",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 39
+    },
+    "_enabled": true,
+    "_materials": [
+      {
+        "__uuid__": "eca5d2f2-8ef6-41c2-bbe6-f9c79d09c432"
+      }
+    ],
+    "_srcBlendFactor": 770,
+    "_dstBlendFactor": 771,
+    "_string": "战绩回放",
+    "_N$string": "战绩回放",
+    "_fontSize": 20,
+    "_lineHeight": 40,
+    "_enableWrapText": true,
+    "_N$file": null,
+    "_isSystemFontUsed": true,
+    "_spacingX": 0,
+    "_batchAsBitmap": false,
+    "_styleFlags": 0,
+    "_underlineHeight": 0,
+    "_N$horizontalAlign": 1,
+    "_N$verticalAlign": 1,
+    "_N$fontFamily": "Arial",
+    "_N$overflow": 0,
+    "_N$cacheMode": 0,
+    "_id": "aeXncSuHtDop2iEX9gbA0y"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 38
+    },
+    "asset": null,
+    "fileId": "f6NCkshF1B7qwkYrIXoxNp",
+    "sync": false
+  },
+  {
+    "__type__": "cc.Sprite",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 38
+    },
+    "_enabled": true,
+    "_materials": [
+      {
+        "__uuid__": "eca5d2f2-8ef6-41c2-bbe6-f9c79d09c432"
+      }
+    ],
+    "_srcBlendFactor": 770,
+    "_dstBlendFactor": 771,
+    "_spriteFrame": {
+      "__uuid__": "d2a2e189-58c0-4df3-b806-f72329ea84ec"
+    },
+    "_type": 0,
+    "_sizeMode": 1,
+    "_fillType": 0,
+    "_fillCenter": {
+      "__type__": "cc.Vec2",
+      "x": 0,
+      "y": 0
+    },
+    "_fillStart": 0,
+    "_fillRange": 0,
+    "_isTrimmedMode": true,
+    "_atlas": null,
+    "_id": "bblnoyhCRMPrweInrWlRX+"
+  },
+  {
+    "__type__": "cc.PrefabInfo",
+    "root": {
+      "__id__": 38
+    },
+    "asset": null,
+    "fileId": "",
+    "sync": false
+  },
+  {
     "__type__": "cc.Camera",
     "_name": "",
     "_objFlags": 0,
@@ -1525,11 +1743,14 @@
     "teamMatchBtn": {
       "__id__": 30
     },
+    "fastMatchBtn": {
+      "__id__": 24
+    },
     "joinTeamBtn": {
       "__id__": 36
     },
-    "fastMatchBtn": {
-      "__id__": 24
+    "recordBtn": {
+      "__id__": 42
     },
     "reloadingPrefab": {
       "__uuid__": "ee4b28a3-433f-4323-815d-ad9c2c0b9195"

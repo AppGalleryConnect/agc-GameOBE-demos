@@ -37,6 +37,8 @@ public class RentRoom : MonoBehaviour
     public Button leaveBtn;
 
     public Button prepareOrStartBtn;
+    
+    public Toggle IsLock;
 
     public GameObject message;
 
@@ -96,8 +98,40 @@ public class RentRoom : MonoBehaviour
             Debug.Log("OnUpdateCustomStatus " + status);
             UnityMainThread.wkr.AddJob(GetRoomInfo);
         };
+        
+        Global.Room.OnRoomPropertiesChange = (roomInfo) =>
+        {
+            Debug.Log("OnRoomPropertiesChange :" + CommonUtils.JsonSerializer(roomInfo));
+            UnityMainThread.wkr.AddJob(GetRoomInfo);
+        };
+
+        IsLock.onValueChanged.AddListener(delegate { updateRoomProperties(IsLock.isOn); });
     }
 
+    private void updateRoomProperties(bool isLock)
+    {
+        int isLockTag = isLock ? 1 : 0;
+        if (Global.playerId ==Global.room.roomInfo.OwnerId && isLockTag!=Global.room.roomInfo.IsLock)
+        {
+            UpdateRoomPropertiesConfig updateRoomProperties = new UpdateRoomPropertiesConfig
+            {
+                IsLock = isLockTag,
+                CustomRoomProperties =  Global.room.roomInfo.CustomRoomProperties == null?"":Global.room.roomInfo.CustomRoomProperties
+            };
+            Global.room.UpdateRoomProperties(updateRoomProperties, res =>
+            {
+                if (res.RtnCode == 0)
+                {
+                    Debug.Log("ChangeLockState Success");
+                }
+                else
+                {
+                    Debug.Log($"ChangeLockState failed {res.Msg}");
+                }
+            });
+        }
+    }
+    
     private void OnReceiveFromServer(RecvFromServerInfo data)
     {
         // TODO根据返回值检测所有玩家加载进度是否都达到100%，是则切换至帧同步场景
@@ -134,15 +168,18 @@ public class RentRoom : MonoBehaviour
         appId.text = Global.Room.roomInfo.AppId;
         roomId.text = Global.Room.roomInfo.RoomId;
         roomCode.text = Global.Room.roomInfo.RoomCode;
-
+        IsLock.GetComponent<Toggle>().enabled = false;
         // 当前玩家是否为房主
         isOwner = Global.playerId == Global.Room.roomInfo.OwnerId;
 
+        IsLock.isOn = Global.room.roomInfo.IsLock == Decimal.One;
         if (isOwner)
         {
             prepareOrStartBtn.GetComponentInChildren<Text>().text = "开始游戏";
             prepareOrStartBtn.GetComponent<Button>().interactable =
                 Global.Room.roomInfo.Players.Length > 1 && !bLoading;
+            IsLock.GetComponent<Toggle>().enabled = true;
+
         }
 
         // 渲染玩家
@@ -280,7 +317,6 @@ public class RentRoom : MonoBehaviour
         SDKDebugLogger.Log("广播--游戏帧同步开始");
         Global.state = 1; // 帧同步状态 0停止帧同步，1开始帧同步
         Global.keyOperate = 1; // 按键操作限制 0限制操作，1允许操作
-
         // 先进入加载
         foreach (PlayerInfo player in Global.Room.roomInfo.Players)
             if (Global.playerId == player.PlayerId)
@@ -306,8 +342,47 @@ public class RentRoom : MonoBehaviour
         leaveBtn.GetComponent<Button>().interactable = false;
         UnityMainThread.wkr.AddJob(GetRoomInfo);
         prepareOrStartBtn.GetComponent<Button>().interactable = false;
+        InitServerGameData();
+        
         // 开始上报自己的加载进度
         ReportPorgress();
+    }
+
+    private void InitServerGameData()
+    {
+        RTInitGameMessage msg = new RTInitGameMessage()
+        {
+            type = "InitGame",
+            planeSize = 0, // 飞机尺寸，圆形，半径为15像素
+            planeHp = 0, // 飞机生命值
+            bulletSize = 0, // 子弹尺寸，圆形，半径为4像素
+            bulletSpeed = 0, // 子弹步长
+            playerArr = new[] {new PlaneInitInfo()
+            {
+                playerId=Global.client.GetPlayerId(),
+                direction = FrameSync.FrameSyncCmd.up,
+                position = new Position()
+                {
+                    x = 0, y = 0
+                }
+            }},
+        };
+
+        SendToServerInfo info = new SendToServerInfo()
+        {
+            Msg = CommonUtils.JsonSerializer(msg)
+        };
+        Global.Room.SendToServer(info, (res) =>
+        {
+            if (res == 0)
+            {
+                Debug.Log("上报游戏初始化成功=" + info.Msg);
+            }
+            else
+            {
+                Debug.LogError("上报游戏初始化成功失败");
+            }
+        });
     }
 
     private void ReportPorgress()

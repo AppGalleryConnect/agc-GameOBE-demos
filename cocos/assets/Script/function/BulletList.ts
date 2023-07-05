@@ -1,5 +1,5 @@
 /**
- * Copyright 2022. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
  *  limitations under the License.
  */
 
-export interface BulletData<T> {
+export interface BulletData {
     playerId: string,
     bulletId: number,
     x: number,
     y: number,
-    rotation: number,
-}
-
-export interface BulletList<T> {
-    bullets: BulletData<T>[],
+    direction: number,
+    needDestroy: boolean,
 }

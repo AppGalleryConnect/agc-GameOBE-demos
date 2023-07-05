@@ -56,24 +56,6 @@ public class Hall : MonoBehaviour
         }
     }
 
-    private void OnEnable()
-    {
-        Application.logMessageReceivedThreaded += ApplicationOnlogMessageReceivedThreaded;
-    }
-    
-    private void ApplicationOnlogMessageReceivedThreaded(string condition, string stacktrace, LogType type)
-    {
-        switch (type)
-        {
-            case LogType.Exception:
-            case LogType.Error:
-                Debug.LogError($"exception logMessageReceivedThreaded:logType:{type}; condition: {condition}; strackTrace:{stacktrace}");
-                break;
-            default:
-                Debug.Log($"normal logMessageReceivedThreaded:logType:{type}; condition: {condition};strackTrace:{stacktrace}");
-                break;
-        }
-    }
     //点击菜鸟区按钮
     public void OnOrdinaryRoomBtn()
     {
@@ -215,6 +197,7 @@ public class Hall : MonoBehaviour
         if (res.RtnCode == 0)
         {
             Debug.Log("CreateGroup success");
+            Global.group = res.Group;
             Route.GoTeam();
         }
         else

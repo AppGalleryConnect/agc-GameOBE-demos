@@ -98,6 +98,7 @@ public class AsymmetricRoom : MonoBehaviour
     }
 
     private void InitListener() {
+        Util.SaveRoomType(FrameSync.RoomType.ASYCROOM);
         // 监听加入房间
         Global.room.OnJoin = playerInfo => OnJoining();
         // 监听开始帧同步
@@ -111,7 +112,6 @@ public class AsymmetricRoom : MonoBehaviour
     private void InitRoomView() {
         if (Global.room != null)
         {
-            Util.SaveRoomType(FrameSync.RoomType.ASYCROOM);
             Global.room.Update(response =>
             {
                 if (response.RtnCode == 0)

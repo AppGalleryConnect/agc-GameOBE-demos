@@ -26,30 +26,58 @@
  *  2021.12.15-Changed method calcFrame
  *  2023.03.21-Changed method resetFrameSyncPlayerList
  *  2023.03.21-Changed method roomMatch
+ *  2023.06.28-Deleted enum CollideTagEnum
+ *  2023.06.28-Add enum CollideTag
+ *  2023.06.28-Add enum Direction
+ *  2023.06.28-Deleted enum FrameSyncCmd
+ *  2023.06.28-Add enum CmdType
+ *  2023.06.28-Deleted interface Player
+ *  2023.06.28-Deleted interface Cloud
+ *  2023.06.28-Deleted interface Bullet
+ *  2023.06.28-Deleted method reCalcFrameState
+ *  2023.06.28-Add method setPlayerData
+ *  2023.06.28-Add method updatePlayerData
+ *  2023.06.28-Changed method resetFrameSyncPlayerList
+ *  2023.06.28-Changed method roomMatch
+ *  2023.06.28-Changed method teamMatch
+ *  2023.06.28-Changed method setDefaultFrameState
+ *  2023.06.28-Deleted method setPlayerCMD
+ *  2023.06.28-Deleted method createBulletData
+ *  2023.06.28-Deleted method handleCollide
+ *  2023.06.28-Deleted method calcFrame
+ *  2023.06.28-Deleted method initPlayer
+ 
  *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 import {PlayerList, PlayerData} from "./PlayerList";
 import global from "../../global";
 import {CloudList} from "./CloudList";
-import {BulletData, BulletList} from "./BulletList";
-import Circle from "../comp/Circle";
 
-let frames: GOBE.ServerFrameMessage[] = [];
+export let frames: GOBE.ServerFrameMessage[] = [];
 
-export enum FrameSyncCmd {
-    up = 1,
-    down = 2,
-    left = 3,
-    right = 4,
-    fire = 5,
-    collide = 7, // 碰撞指令
+// 碰撞体tag
+export enum CollideTag {
+    plane = 0,
+    bullet = 1,
+    circle = 2,
 }
-// 碰撞体tag(要和组件中属性保持一致.因为不知道如何重组件中获取.所以在这里定义)
-export enum CollideTagEnum {
-    bullet = 0,
-    circle = 1,
-    aircraft = 2,
+
+// key：方向， value：角度
+export enum Direction {
+    up = 0,
+    down = 180,
+    left = 90,
+    right = -90
+}
+
+// 操作指令类型
+export enum CmdType {
+    planeFly = 0,              // 飞机飞行
+    bulletFly = 1,             // 子弹移动
+    bulletDestroy = 2,         // 子弹销毁
+    collide = 3,               // 碰撞
+    syncRoomInfo = 4,          // 房主同步房间信息
 }
 
 export enum Team {
@@ -57,41 +85,26 @@ export enum Team {
     yellow = "1"
 }
 
-export interface Player {
-    cmd: FrameSyncCmd,
-    dir: 1 | -1,
-    lastUpdateFrameId: number,
-}
-
-export interface Cloud {
-    x: 0,
-    y: 0,
-    offset: 0,
-    speed: 0;
-}
-
-export interface Bullet {
-    playerId: "",
-    bulletId: 0,
-    x: 0,
-    y: 0,
-    rotation: 0,
-}
-export const frameSyncBulletList: BulletList<Bullet> = {
-    bullets: []
-};
-
-export const cloudsList: CloudList<Cloud> = {
+export const cloudsList: CloudList = {
     clouds: []
 };
 
-export const frameSyncPlayerList: PlayerList<Player> = {
+export const frameSyncPlayerList: PlayerList = {
     players: []
 };
 
+// 碰撞事件
+export interface ColliderEvent {
+    playerId: string;
+    bulletId: string;
+    timeStamp: number;
+}
+
+export const colliderEventMap = new Map<string, ColliderEvent>();
+export const destroyedBulletSet = new Set();
 
 // 记录玩家初始化的位置，以便飞机被子弹击中后回到初始化位置
-export const frameSyncPlayerInitList: PlayerList<Player> = {
+export const frameSyncPlayerInitList: PlayerList = {
     players: []
 };
 
@@ -103,25 +116,30 @@ export function pushFrames(frame: GOBE.ServerFrameMessage) {
     frames.push(frame);
 }
 
-export function reCalcFrameState() {
-    setDefaultFrameState();
-    frames.forEach(frame => {
-        calcFrame(frame);
-    });
-}
-
-function initPlayer(x: number, y: number, playerId: string, rotation: number, cmd: FrameSyncCmd, playerTeamId: string, robotName?: string) {
-    const player: PlayerData<Player> = {
-        x: x, y: y, id: playerId, rotation: rotation, playerTeamId: playerTeamId,
-        state: {
-            cmd: cmd,
-            dir: 1,
-            lastUpdateFrameId: 1
-        },
+export function setPlayerData(playerId: string, x: number, y: number, hp: number, isShoot: boolean, dir: Direction, teamId: string, robotName?: string) {
+    const player: PlayerData = {
+        playerId,
+        x,
+        y,
+        hp,
+        isShoot,
+        direction: dir,
+        teamId,
         robotName,
     };
     frameSyncPlayerList.players.push(player);
     frameSyncPlayerInitList.players.push(player);
+}
+
+export function updatePlayerData(playerId: string, x: number, y: number, hp: number, dir: Direction) {
+    let playerData = frameSyncPlayerList.players.find((p) => p.playerId == playerId);
+    if(playerData) {
+        playerData.x = x;
+        playerData.y = y;
+        playerData.hp = hp;
+        playerData.direction = dir;
+    }
+    // console.log('-----frameSyncPlayerList.players----------' + JSON.stringify(frameSyncPlayerList.players));
 }
 
 export function resetFrameSyncPlayerList() {
@@ -131,12 +149,29 @@ export function resetFrameSyncPlayerList() {
         if (player.customPlayerProperties=="watcher"){
             return;
         }
-        if (global.room.ownerId !== player.playerId) {
-            // 如果不是房主
-            initPlayer(19, 0, player.playerId, 90, FrameSyncCmd.left, null, player.robotName);
+        // 如果是房主(红色)
+        if (global.room.ownerId == player.playerId) {
+            setPlayerData(
+                global.room.ownerId,
+                global.redPlayer1StartPos.x,
+                global.redPlayer1StartPos.y,
+                global.planeHp,
+                false,
+                Direction.right,
+                null,
+                player.robotName
+            );
         } else {
-            // 如果是房主
-            initPlayer(0, 10, global.room.ownerId, -90, FrameSyncCmd.right, null, player.robotName);
+            setPlayerData(
+                player.playerId,
+                global.yellowPlayer1StartPos.x,
+                global.yellowPlayer1StartPos.y,
+                global.planeHp,
+                false,
+                Direction.left,
+                null,
+                player.robotName
+            );
         }
     })
 }
@@ -144,50 +179,85 @@ export function resetFrameSyncPlayerList() {
 function roomMatch(roomInfo) {
     // 房间匹配
     let roomProp = null;
-    if(roomInfo.customRoomProperties) {
+    if(roomInfo?.customRoomProperties) {
         roomProp = JSON.parse(roomInfo.customRoomProperties);
     }
     roomInfo.players.forEach((p) => {
         if (p.customPlayerProperties == "watcher"){
             return;
         }
-        if(roomProp.frameSyncPlayerArr) {
+        if(roomProp?.frameSyncPlayerArr) {
             let item = roomProp.frameSyncPlayerArr.find(item => item.playerId === p.playerId);
-            initPlayer(item.x, item.y, item.playerId, item.rotation, item.cmd, null, item.robotName);
+            setPlayerData(item.playerId, item.x, item.y, item.hp, item.isShoot, item.direction, null, item.robotName);
         }
         else {
-            if (roomInfo.ownerId !== p.playerId) {
-                // 如果不是房主
-                initPlayer(19, 0, p.playerId, 90, FrameSyncCmd.left, null, p.robotName);
+            // 如果是房主(红色)
+            if (roomInfo.ownerId == p.playerId) {
+                setPlayerData(
+                    roomInfo.ownerId,
+                    global.redPlayer1StartPos.x,
+                    global.redPlayer1StartPos.y,
+                    global.planeHp,
+                    false,
+                    Direction.right,
+                    null,
+                    p.robotName
+                );
             } else {
-                // 如果是房主
-                initPlayer(0, 10, roomInfo.ownerId, -90, FrameSyncCmd.right, null, p.robotName);
+                setPlayerData(
+                    p.playerId,
+                    global.yellowPlayer1StartPos.x,
+                    global.yellowPlayer1StartPos.y,
+                    global.planeHp,
+                    false,
+                    Direction.left,
+                    null,
+                    p.robotName
+                );
             }
         }
     });
 }
 
-function teamMatch(redTeamId: any, roomInfo) {
+function teamMatch(redTeamId: string, roomInfo) {
     // 组队匹配
-    let yellowYCoordinates = 0;
-    let redYCoordinates = 10;
+    let yellowPosY = global.yellowPlayer1StartPos.y;
+    let redPosY = global.redPlayer1StartPos.y;
     let roomProp = null;
-    if(roomInfo.customRoomProperties) {
+    if(roomInfo?.customRoomProperties) {
         roomProp = JSON.parse(roomInfo.customRoomProperties);
     }
     roomInfo.players.forEach((p) => {
-        if(roomProp.frameSyncPlayerArr) {
+        if(roomProp?.frameSyncPlayerArr) {
             let item = roomProp.frameSyncPlayerArr.find(item => item.playerId === p.playerId);
-            initPlayer(item.x, item.y, item.playerId, item.rotation, item.cmd, null, item.robotName);
+            setPlayerData(item.playerId, item.x, item.y, item.hp, item.isShoot, item.direction,null, item.robotName);
         } else {
             if (redTeamId === p.teamId) {
                 // 红队
-                initPlayer(0, redYCoordinates, p.playerId, -90, FrameSyncCmd.right, Team.red, p.robotName);
-                redYCoordinates--;
+                setPlayerData(
+                    p.playerId,
+                    global.redPlayer1StartPos.x,
+                    redPosY,
+                    global.planeHp,
+                    false,
+                    Direction.right,
+                    Team.red,
+                    p.robotName
+                );
+                redPosY -= global.playerYStartOffset;
             } else {
                 // 黄队
-                initPlayer(19, yellowYCoordinates, p.playerId, 90, FrameSyncCmd.left, Team.yellow, p.robotName);
-                yellowYCoordinates++;
+                setPlayerData(
+                    p.playerId,
+                    global.yellowPlayer1StartPos.x,
+                    yellowPosY,
+                    global.planeHp,
+                    false,
+                    Direction.left,
+                    Team.yellow,
+                    p.robotName
+                );
+                yellowPosY += global.playerYStartOffset;
             }
         }
     });
@@ -206,7 +276,13 @@ function getRedTeamId(roomInfo) {
 }
 
 export function setDefaultFrameState() {
-    const roomInfo = global.room;
+    let roomInfo;
+    if (global.gameSceneType == GameSceneType.FOR_RECORD) {
+        roomInfo = global.recordRoomInfo;
+    }
+    else {
+        roomInfo = global.room;
+    }
     frameSyncPlayerList.players = [];
     let redTeamId = getRedTeamId(roomInfo);
     if (redTeamId) {
@@ -218,82 +294,10 @@ export function setDefaultFrameState() {
     }
 }
 
-function setPlayerCMD(id: string, cmd: FrameSyncCmd, x: number, y: number) {
-    const player = frameSyncPlayerList.players.find(p => p.id === id) || {state: {}} as PlayerData<Player>;
-    player.state.cmd = cmd;
-    player.x = x;
-    player.y = y;
-    cmd === FrameSyncCmd.up && (player.rotation = 0);
-    cmd === FrameSyncCmd.down && (player.rotation = 180);
-    cmd === FrameSyncCmd.left && (player.rotation = 90);
-    cmd === FrameSyncCmd.right && (player.rotation = -90);
-}
-
-/**
- * 创建子弹数据
- * @param obj
- */
-function createBulletData(obj) {
-    const bullet: BulletData<Bullet> = {
-        playerId: obj["playerId"],
-        bulletId: obj["bulletId"],
-        x: obj["x"],
-        y: obj["y"],
-        rotation: obj["rotation"],
-    };
-    frameSyncBulletList.bullets.push(bullet);
-}
-
-
-
-function handleCollide(obj) {
-    // 圆圈和飞机的碰撞
-    if(obj["otherTag"] === CollideTagEnum.aircraft && obj["selfTag"] === CollideTagEnum.circle){
-        let circle = cc.find('Canvas/Content/FrameSync/GameCanvas/CircleSpecial');
-        const circleTs = circle.getComponent(Circle);
-        circleTs.changeColor();
-    }
-    // 子弹碰撞飞机(飞机发出的指令) - 飞机回到原点
-    if (obj["selfTag"] === CollideTagEnum.aircraft && obj["otherTag"] === CollideTagEnum.bullet){
-        const playerInit = frameSyncPlayerInitList.players.find(p => p.id === obj["playerId"]) || {state: {}} as PlayerData<Player>;
-        const player = frameSyncPlayerList.players.find(p => p.id === obj["playerId"]) || {state: {}} as PlayerData<Player>;
-        player.x = playerInit.x;
-        player.y = playerInit.y;
-    }
-    // 子弹碰撞飞机(子弹发出的指令) - 子弹销毁
-    if (obj["selfTag"] === CollideTagEnum.bullet && obj["otherTag"] === CollideTagEnum.aircraft){
-        frameSyncBulletList.bullets = frameSyncBulletList.bullets.filter(item => !(item.playerId === obj["playerId"]
-            && item.bulletId === obj["bulletId"]));
-    }
-}
-
-
-export function calcFrame(frame: GOBE.ServerFrameMessage) {
-    if (frame.currentRoomFrameId === 1) {
-        setDefaultFrameState();
-    }
-    if (frame.frameInfo && frame.frameInfo.length > 0) {
-        frame.frameInfo.forEach(frameItem => {
-            let frameData: string[] = frameItem.data;
-            if (frameData && frameData.length > 0) {
-                frameData.forEach(data => {
-                    let obj = JSON.parse(data);
-                    switch (obj["cmd"]) {
-                        case FrameSyncCmd.fire:
-                            createBulletData(obj);
-                            break;
-                        case FrameSyncCmd.collide:
-                            handleCollide(obj);
-                            break;
-                        default:
-                            if(obj["playerId"]) {
-                                setPlayerCMD(obj["playerId"], obj["cmd"], obj["x"], obj["y"]);
-                            } else {
-                                setPlayerCMD(frameItem.playerId, obj["cmd"], obj["x"], obj["y"]);
-                            }
-                    }
-                });
-            }
-        });
-    }
+//  游戏场景作用类型
+export enum GameSceneType {
+    FOR_NULL = 0,
+    FOR_GAME = 1,
+    FOR_WATCHER = 2,
+    FOR_RECORD = 3,
 }
