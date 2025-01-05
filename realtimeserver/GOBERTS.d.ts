@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -59,12 +59,26 @@ declare interface ArgsConfig {
     logger?: any;
 }
 
+declare interface AuthResponse extends BaseResponse {
+    serviceToken: string;
+    timeStamp: number;
+}
+
 export declare const enum AutoFrame {
     AUTO_FRAME_OFF = 0,
     AUTO_FRAME_ON = 1
 }
 
+declare interface AvailableRoomsResponse extends BaseResponse {
+    rooms: RoomInfo_2[];
+    count: number;
+    offset: string | number;
+    hasNext: 0 | 1;
+}
+
 declare interface BaseResponse {
+    rtnCode: number;
+    msg?: string;
     ret: {
         code: number;
         msg?: string;
@@ -146,6 +160,8 @@ export declare interface GameServer {
     onUpdateCustomStatus?: OnUpdateCustomStatusFunc;
     onRealTimeServerDisconnected?: CommonFunc;
     onRealTimeServerConnected?: CommonFunc;
+    onRoomPropertiesChangeFailed?: ErrorFunc;
+    onInstantMessageFailed?: ErrorFunc;
 }
 
 declare interface GetCacheResponse extends BaseResponse {
@@ -167,12 +183,46 @@ export declare interface gobeDevloperCode {
  */
 export declare class GOBEError extends Error {
     code: number;
+    msg?: string;
     constructor(code: number, message?: string);
 }
 
 export declare const enum ImType {
     ALL_PLAYERS_EXCEPT_ME = 1,
     SPECIFILED_PLAYERS = 2
+}
+
+declare interface LocalServerChannelResponse extends BaseResponse {
+    epAddr: string;
+    roomId: string;
+    roomTicket: string;
+    setupTicket: string;
+    joinTicket: string;
+    autoFrame: number;
+    frameRate: number;
+}
+
+declare interface LocalServerMethodRoute {
+    init: (appId: string, clientId: string, clientSecret: string) => Promise<AuthResponse>;
+    getRoomList: (roomType: string) => Promise<AvailableRoomsResponse>;
+    joinRoom: (roomCode: string, roomId: string) => Promise<BaseResponse>;
+}
+
+export declare const localServerMethodRoute: LocalServerMethodRoute;
+
+export declare class Logger {
+    static level: LogLevel;
+    debug(debugInfo: string): void;
+    info(info: string): void;
+    warn(info: string): void;
+    error(errInfo: string): void;
+}
+
+export declare enum LogLevel {
+    DEBUG = 1,
+    INFO = 2,
+    ERROR = 3,
+    OFF = 4
 }
 
 /**
@@ -329,14 +379,18 @@ declare namespace serverInterface {
         ArgsConfig,
         ServerAckMessage,
         BaseResponse,
+        AuthResponse,
+        AvailableRoomsResponse,
         GetRoomInfoResponse,
         CreateChannelResponse,
+        LocalServerChannelResponse,
         GetCacheResponse,
         CreateChannelResponseData,
         RoomInfo_2 as RoomInfo,
         PlayerInfo_2 as PlayerInfo,
         RouterInfo_2 as RouterInfo,
-        CacheValue_2 as CacheValue
+        CacheValue_2 as CacheValue,
+        LocalServerMethodRoute
     }
 }
 
@@ -397,6 +451,7 @@ declare interface ServerLessMethodRequest {
  * @param ownerId - 房主ID
  * @param isPrivate - 是否私有
  * @param isLock - 是否锁定房间 0：非锁定（允许加入房间），1：锁定（不允许加入房间）
+ * @param roomType - 房间类型
  */
 export declare interface UpdateRoomInfo {
     roomName?: string;
@@ -404,6 +459,7 @@ export declare interface UpdateRoomInfo {
     ownerId?: string;
     isPrivate?: number;
     isLock?: number;
+    roomType?: string;
 }
 
 export { }

@@ -1,10 +1,10 @@
 # GameOBEDemoForUnity
 
-## Table of Contencs
+## Table of Contents
 
 * [Introduction](#Introduction)
 * [Installation](#Installation)
-* [Supported Environmencs](#Supported_Environmencs)
+* [Supported Environments](#Supported_Environments)
 * [Configuration](#Configuration)
 * [Sample Code](#Sample_Code)
 * [License](#License)
@@ -26,9 +26,9 @@ Visit [wiki](https://github.com/AppGalleryConnect/agc-GameOBE-demos/wiki) for mo
 Before using the online battle sample code, check that Unity Hub and Unity 2021.2.15f1c1 are installed.
 Decompress the sample code package. In Project of Unity Hub, import the GameOBEDemoForUnity file from the decompressed folder.
 
-<a id="Supported_Environmencs"></a>
+<a id="Supported_Environments"></a>
 
-## Supported Environmencs
+## Supported Environments
 
 Unity 2021.2.15f1c1 or a later version is recommended.
 
@@ -39,13 +39,13 @@ Unity 2021.2.15f1c1 or a later version is recommended.
 To use functions provided by packages in example, you need to set related parameters in \Assets\Config.cs.   
 The following describes parameters in \Assets\Config.cs:
 
-| parameters | describes |
-|:----- |:-------|
-| gameId      |  Game ID, Identify a game. |
-| openId      |  Distinguish between different users. |
-| clientId    |  Unique identifier used for authentication when integrating SDK. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
-| cliencsecret|  Key used for authentication when integrating SDK. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
-| gameSecret  |  Game Private Key used for Security hardening. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
+| parameters   | describes |
+|:-------------|:-------|
+| gameId       |  Game ID, Identify a game. |
+| openId       |  Distinguish between different users. |
+| clientId     |  Unique identifier used for authentication when integrating SDK. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
+| clientSecret |  Key used for authentication when integrating SDK. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
+| gameSecret   |  Game Private Key used for Security hardening. Get from [AppGallery Connect (AGC)](https://developer.huawei.com/consumer/cn/service/josp/agc/index.html#/). |
 <a id="Sample_Code"></a>
 
 ## Sample Code
@@ -63,16 +63,16 @@ from [the unity official website](https://www.unity.cn/).
 
 * Directory: Assets/Script
 
-  Store scripcs from game scenes.
+  Store scripts from game scenes.
 
-The following is a brief description of the scene design files and corresponding scripcs.
+The following is a brief description of the scene design files and corresponding scripts.
 
 * Home page of game battle platform.
 
   \Assets\Scene\Home.unity  
   \Assets\Script\scene\Home.cs
 
-* In these scenes, player can perform five operations. If the player wancs to join the room, the player needs to select the area that he wancs to enter, which now includes the rookie area and the expert area. If you want to perform a quick match, you can click the Quick Match button. The system will automatically match the right players for you; Players can also choose to create or join teams and play with friends.
+* In these scenes, player can perform five operations. If the player wants to join the room, the player needs to select the area that he wants to enter, which now includes the rookie area and the expert area. If you want to perform a quick match, you can click the Quick Match button. The system will automatically match the right players for you; Players can also choose to create or join teams and play with friends.
 
   \Assets\Scene\Hall.unity  
   \Assets\Script\scene\Hall.cs
@@ -87,22 +87,22 @@ The following is a brief description of the scene design files and corresponding
   \Assets\Scene\CreateRoom.unity  
   \Assets\Script\scene\CreateRoom.cs
   
-  \Assets\Scene\Roomlist.unity  
-  \Assets\Script\scene\Roomlist.cs
+  \Assets\Scene\RoomList.unity  
+  \Assets\Script\scene\RoomList.cs
   
   \Assets\Scene\Room.unity  
   \Assets\Script\scene\Room.cs
   
 * These pages are used to create teams and display team information. The team list, Players can select or enter a room number to join a room; The team room page is used to display the information about the  successfully matched team rooms. Players can click to prepare or leave the room. All players are ready and the homeowner is responsible for clicking the start button to enter the game scene.
 
-  \Assets\Scene\team.unity  
-  \Assets\Script\scene\team.cs
+  \Assets\Scene\Team.unity  
+  \Assets\Script\scene\Team.cs
   
   \Assets\Scene\TeamInfoView.unity  
-  \Assets\Script\scene\TeamInfoView.cs
+  \Assets\Script\scene\TeamInfo.cs
   
-  \Assets\Scene\teamroom.unity  
-  \Assets\Script\scene\teamroom.cs
+  \Assets\Scene\TeamRoomView.unity  
+  \Assets\Script\scene\TeamRoom.cs
 
 * After the homeowner clicks to start the game, the player enters the game. Then, the game begins.
 

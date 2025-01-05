@@ -30,7 +30,7 @@
  *  2023.06.28-Changed method setPlayers
  *  2023.06.28-Changed method setBullet
  *  2023.06.28-Add method destroyBullet
- *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
+ *             Copyright(C)2024. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 // Learn TypeScript:

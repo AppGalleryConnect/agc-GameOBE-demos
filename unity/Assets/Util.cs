@@ -26,7 +26,7 @@ public class Util {
     private readonly static string _playerNameOption = "abcdefghijklmnopqrstuvwxyz";
 
     private readonly static string _openIdOption = "0123456789abcdefghijklmnopqrstuvwxyz";
-    
+
     public readonly static string  _robotPrefix = "机器人";
     /**
      * 随机产生 openId
@@ -96,7 +96,7 @@ public class Util {
         else
         {
             matchParams.Add("level", "2");
-           
+
         }
         return matchParams;
 
@@ -120,7 +120,7 @@ public class Util {
        string playerName =  Global.playerName;
        string teamNumber = "0";
        string result = "";
-    
+
        Dictionary<string, string> teamMatchParams = getTeamMatchParams();
         //非对称模式
         if (teamMatchParams != null)
@@ -156,5 +156,34 @@ public class Util {
             PlayerPrefs.SetInt("roomType",(int)room);
             PlayerPrefs.Save();
         }
+    }
+
+    public static void SaveOnlineMatch(Boolean isOnlineMatch)
+    {
+        if (Config.openId == PlayerPrefs.GetString("openId"))
+        {
+            PlayerPrefs.SetInt("isOnlineMatch",isOnlineMatch?1:0);
+            PlayerPrefs.Save();
+        }
+    }
+
+    public static string GetInternalStoragePath()
+    {
+#if UNITY_ANDROID
+        // 获取Unity的主Activity
+        Debug.Log($"begin to get activity");
+        AndroidJavaClass unityPlayerClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        AndroidJavaObject currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>("currentActivity");
+
+        // 获取Android的内部存储路径
+        AndroidJavaObject context = currentActivity.Call<AndroidJavaObject>("getApplicationContext");
+        AndroidJavaObject fileObject = context.Call<AndroidJavaObject>("getFilesDir");
+        string internalStoragePath = fileObject.Call<string>("getAbsolutePath");
+        Debug.Log($"internal path={internalStoragePath}");
+        return internalStoragePath;
+#else
+        Debug.Log($"internal path={Application.persistentDataPath}");
+        return Application.persistentDataPath;
+#endif
     }
 }

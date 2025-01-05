@@ -1,5 +1,5 @@
 /*
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ class GlobalData {
     public roomType: RoomType = RoomType.NULL;    // 房间类型，区分1v1、2v2、3v1类型房间，重连时用\
 
     public isConnected: boolean = false; // 长链是否是连接状态，默认false
+    public jumpType: number = 0; // 跳转方式 1-小队跳转 2-房间跳转
+
+    public isGroupConnected: boolean = false; // 长链是否是连接状态，默认false
 
     public planeSize: number = 15;            // 飞机尺寸，圆形，半径为15像素
     public planeStepPixel: number = 20;       // 飞机每步移动像素

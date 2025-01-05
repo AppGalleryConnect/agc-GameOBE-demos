@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,12 +19,19 @@ import {PlayerInfo} from "../../GOBE/GOBE";
 import Reloading from "../comp/Reloading";
 import config from "../../config";
 import Dialog from "../comp/Dialog";
+import {sleep} from "../function/Common";
+import Global from "../../global";
 
 const {ccclass, property} = cc._decorator;
 
 @ccclass
 export default class Team extends cc.Component {
-
+    // 刷新队伍名称
+    @property(cc.Button)
+    updateBtn: cc.Button = null;
+    // 队伍名称
+    @property(cc.Label)
+    teamName: cc.Label = null;
     // 当前玩家数
     @property(cc.Label)
     playerNum: cc.Label = null;
@@ -72,6 +79,7 @@ export default class Team extends cc.Component {
         // 队伍code
         this.teamCodeEditBox.string = group.id;
         Util.printLog("队伍code：" + group.id);
+        this.teamName.string = '队伍名称：' + group.groupName;
         // 获取队长玩家
         let ownerPlayer: PlayerInfo = null;
         let players = group.players;
@@ -117,6 +125,7 @@ export default class Team extends cc.Component {
             this.enableDismissBtn.active = true;
             // 隐藏“退出队伍”按钮
             this.enableLeaveBtn.active = false;
+            this.updateBtn.node.active = true;
         } else {  // 不是队长
             // 隐藏“解散队伍”、“快速匹配”按钮
             this.isOwner = false;
@@ -124,6 +133,7 @@ export default class Team extends cc.Component {
             this.enableDismissBtn.active = false;
             // 显示“退出队伍”按钮
             this.enableLeaveBtn.active = true;
+            this.updateBtn.node.active = false;
         }
         // 设置加载Dialog
         const relaodingNode = cc.instantiate(this.reloadingPrefab) as cc.Node;
@@ -137,15 +147,32 @@ export default class Team extends cc.Component {
         this.enableLeaveBtn.on(cc.Node.EventType.TOUCH_START, () => this.leaveGroup());
         // 绑定“快速匹配”按钮
         this.enableMatchBtn.on(cc.Node.EventType.TOUCH_START, () => this.teamMatch());
+        // 更新队伍名称
+        this.updateBtn.node.on(cc.Node.EventType.TOUCH_START, () => this.updateTeamName());
 
         // 清除group绑定事件
         this.clearListener()
 
         // 监听心跳事件（demo根据不同的事件，对数据或界面更新）
         global.group.onDismiss(() => this.onDismiss());
-        global.group.onLeave((serverEvent) => this.onLeave(serverEvent));
-        global.group.onJoin(() => this.onJoin());
-        global.group.onMatchStart((serverEvent) => this.onTeamMatch(serverEvent));
+        global.group.onLeave((playerInfo) => this.onLeave(playerInfo));
+        global.group.onJoin((playerInfo) => this.onJoin(playerInfo));
+        global.group.onMatchStart(() => this.onTeamMatch());
+        global.group.onUpdate((groupInfo) => this.onUpdate(groupInfo));
+        // 断线重连
+        global.group.onDisconnect((playerInfo: PlayerInfo) => this.onDisconnect(playerInfo)); // 断连监听
+    }
+
+    updateTeamName() {
+        const name = `随机队伍${Math.floor(Math.random() * 90 + 10)}`;
+        global.group.updateGroup({groupName: name}).then(() => {
+            console.log(`更新小队名称为${name}`);
+        });
+    }
+
+    onUpdate(groupInfo) {
+        this.teamName.string = '队伍名称：' + groupInfo.groupName;
+        console.log('更新队伍名称成功: ' + groupInfo.groupName);
     }
 
     clearListener() {
@@ -195,13 +222,10 @@ export default class Team extends cc.Component {
     /**
      * 监听“退出队伍”
      */
-    onLeave(serverEvent) {
-        let parseEventParam: any;
-        if (serverEvent.eventParam) {
-            parseEventParam = JSON.parse(serverEvent.eventParam);
-        }
+    onLeave(playerInfo) {
+        console.log('触发了离开小队的消息');
         // 当前操作人id（比如是谁退出了队伍）
-        let operator = parseEventParam.group.players[0].playerId;
+        let operator = playerInfo.playerId;
         if (operator == global.playerId) {  // 是本人退出
             cc.director.loadScene("hall");
         } else {
@@ -212,8 +236,8 @@ export default class Team extends cc.Component {
     /**
      * 监听“加入队伍”
      */
-    onJoin() {
-        Util.printLog("加入队伍");
+    onJoin(serverEvent) {
+        Util.printLog("加入队伍: " + JSON.stringify(serverEvent));
         //更新队伍信息
         this.updateGroup();
     }
@@ -254,10 +278,10 @@ export default class Team extends cc.Component {
     /**
      * 监听“组队匹配”
      */
-    onTeamMatch(serverEvent) {
+    onTeamMatch() {
         Util.printLog('isOwner:' + this.isOwner);
-        Util.printLog('心跳：匹配开始通知，serverEvent =' + serverEvent);
-        if (!this.isOwner && serverEvent.eventType === 1) {
+        Util.printLog('心跳：匹配开始通知');
+        if (!this.isOwner) {
             // 如果不是队长就弹出匹配中
             Reloading.open("队员匹配中。。。", false);
             global.client.matchQuery();
@@ -317,6 +341,35 @@ export default class Team extends cc.Component {
         Reloading.close();
         if (global.group) {
             global.group.removeAllListeners();
+        }
+    }
+
+     async onDisconnect(playerInfo: PlayerInfo) {
+        Util.printLog("玩家掉线");
+        if (playerInfo.playerId === global.playerId) {
+            Global.isGroupConnected = false;
+           await this.reConnectGroup();
+        }
+    }
+
+     async reConnectGroup() {
+        while (!Global.isGroupConnected){
+            // 没有超过重连时间，就进行重连操作
+            await global.group.reconnect().then(() => {
+                Global.isGroupConnected = true;
+                Util.printLog("玩家重连小队成功");
+            }).catch((error) => {
+               if (!error.code || error.code === 91002) {
+                   // 加入房间请求不通就继续重连
+                   Util.printLog("玩家重连小队失败，重新尝试");
+               }
+               if (error.code && (error.code === 101205 || error.code === 101206 || error.code === 101202)) {
+                   // 无法加入房间需要退出到大厅
+                   Util.printLog("玩家重连小队失败");
+                   cc.director.loadScene("hall");
+               }
+           });
+            await sleep(2000).then();
         }
     }
 }

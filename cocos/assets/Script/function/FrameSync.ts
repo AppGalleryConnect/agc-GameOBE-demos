@@ -46,8 +46,8 @@
  *  2023.06.28-Deleted method handleCollide
  *  2023.06.28-Deleted method calcFrame
  *  2023.06.28-Deleted method initPlayer
- 
- *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
+
+ *             Copyright(C)2024. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 import {PlayerList, PlayerData} from "./PlayerList";

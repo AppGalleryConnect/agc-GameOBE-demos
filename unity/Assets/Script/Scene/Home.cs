@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class Home : MonoBehaviour
     void Start()
     {
         InitSDKLog();
+        InitText();
         InitListener();
     }
 
@@ -103,6 +104,14 @@ public class Home : MonoBehaviour
         SDKCommonConfig.GOBE_STORAGE_PATH = Application.persistentDataPath +"/gobe";
     }
 
+    void InitText()
+    {
+        GameIdInput.text = Config.gameId;
+        ClientIdInput.text = Config.clientId;
+        ClientSecrectInput.text = Config.clientSecret;
+        MatchCodeInput.text = Config.matchCode;
+    }
+
     void InitListener()
     {
         Button.onClick.AddListener(() => GoHall());
@@ -146,10 +155,10 @@ public class Home : MonoBehaviour
             ClientId = ClientIdDropDown.value == 0 ? ClientIdInput.text : ClientIdDropDown.options[ClientIdDropDown.value].text,
             ClientSecret = ClientSecrectDropDown.value == 0 ? ClientSecrectInput.text : ClientSecrectDropDown.options[ClientSecrectDropDown.value].text,
             AccessToken = AccessTokenInput.text != null ? AccessTokenInput.text : "",
-   
+
         };
 
-         Client = new Client(clientConfig);
+        Client = new Client(clientConfig);
         Debug.Log("SDK 正在初始化");
         try
         {
@@ -157,7 +166,9 @@ public class Home : MonoBehaviour
             // 监听初始化结束事件
             Global.client.OnInitResult = baseResponse => InitFinish(baseResponse);
             Global.roomType = PlayerPrefs.GetInt("roomType");
+            Global.isOnlineMatch = PlayerPrefs.GetInt("isOnlineMatch") == 1;
             Debug.Log("roomtype"+Global.roomType);
+            Debug.Log("isOnlineMatch"+Global.isOnlineMatch);
             Global.client.Init();
 
         }
@@ -177,7 +188,9 @@ public class Home : MonoBehaviour
         {
             // 初始化成功
             Debug.Log("init成功");
+            SDKDebugLogger.Log("Init Success , LastRoomId:{0} , LastGroupId:{1} ",Global.client.GetLastRoomId(),Global.client.GetLastGroupId());
             Global.playerId = Global.client.GetPlayerId();
+            Debug.Log("当前玩家："+Global.playerId);
             if (!string.IsNullOrEmpty(Global.client.GetLastRoomId()))
             {
                 // 断线重连场景，直接加入房间
@@ -188,6 +201,15 @@ public class Home : MonoBehaviour
                 PlayerConfig playerInfo = new PlayerConfig();
                 Global.room = Global.client.JoinRoom(joinRoomReq, playerInfo, JoinRoomCallback);
             }
+            // 小队重连场景
+            if (!string.IsNullOrEmpty(Global.client.GetLastGroupId()))
+            {
+                JoinGroupConfig joinGroupConfig = new JoinGroupConfig()
+                {
+                    GroupId = Global.client.GetLastGroupId()
+                };
+                Global.client.JoinGroup(joinGroupConfig, JoinGroupCallback);
+            }
             switch (Global.reconnectState) {
                 case (int)RoomStatus.SYNCING:
                     Debug.Log("玩家重进游戏");
@@ -195,10 +217,6 @@ public class Home : MonoBehaviour
                     Global.isReconnect = true;
                     Global.player = Global.room._player;
                     UnityMainThread.wkr.AddJob(Route.GoGameView);
-                    break;
-                case (int)RoomStatus.RECYCLING:
-                    Global.room = null;
-                    UnityMainThread.wkr.AddJob(Route.GoHall);
                     break;
                 case (int)RoomStatus.IDLE:
                     Debug.Log("玩家重进房间");
@@ -212,6 +230,12 @@ public class Home : MonoBehaviour
                         UnityMainThread.wkr.AddJob(Route.GoAsymmetricRoom);
                     break;
                 default:
+                    Global.room = null;
+                    if (Global.group != null)
+                    {
+                        UnityMainThread.wkr.AddJob(Route.GoTeam);
+                        break;
+                    }
                     if (Global.isAsymmetric)
                     {
                         UnityMainThread.wkr.AddJob(Route.GoAsymmetricMatchSetting);
@@ -234,8 +258,6 @@ public class Home : MonoBehaviour
 
     }
 
-
-
     private void LeaveRoom()
     {
         // 调用离开房间接口
@@ -243,12 +265,33 @@ public class Home : MonoBehaviour
         {
             if (res.RtnCode == 0)
             {
-                Debug.Log("离开房间success");
+                SDKDebugLogger.Log("ReJoin Room Failed , Leave Room Success");
                 Route.GoHall();
             }
             else
             {
-                Debug.Log("离开房间fail");
+                SDKDebugLogger.Log("Leave Room Success , msg={0}",res.Msg);
+            }
+        });
+    }
+
+    private void LeaveGroup()
+    {
+        // 调用离开小队接口
+        LeaveGroupConfig leaveGroupConfig = new LeaveGroupConfig()
+        {
+            GroupId = Global.client.GetLastGroupId()
+        };
+        Global.client.LeaveGroup(leaveGroupConfig ,res =>
+        {
+            if (res.RtnCode == 0)
+            {
+                SDKDebugLogger.Log("ReJoin Group Failed , Leave Group Success");
+                Route.GoHall();
+            }
+            else
+            {
+                SDKDebugLogger.Log("Leave Group Success , msg={0}",res.Msg);
             }
         });
     }
@@ -303,6 +346,21 @@ public class Home : MonoBehaviour
                 Debug.Log("重新加入房间失败");
                 LeaveRoom();
             }
+        }
+    }
+
+    private void JoinGroupCallback(CreateGroupBaseResponse res)
+    {
+        if (res.RtnCode == 0)
+        {
+            Global.group = res.Group;
+            //Global.isTeamMode = true;
+            Global.player = res.Group.player;
+        }
+        else
+        {
+            Debug.Log("重新加入小队失败");
+            LeaveGroup();
         }
     }
 
@@ -381,7 +439,7 @@ public class Home : MonoBehaviour
                 {
                     // 下拉框选中默认值（空白）
                     GameIdDropDown.value = 0;
-                    // 下拉框透明    
+                    // 下拉框透明
                     GameIdDropDown.GetComponent<Image>().color = new Color(1, 1, 1, 0);
                     // 输入框不透明，使输入框文本内容置顶
                     GameIdInput.GetComponent<Image>().color = new Color(1, 1, 1, 1);
@@ -412,7 +470,7 @@ public class Home : MonoBehaviour
                 {
                     // 下拉框选中默认值（空白）
                     ClientIdDropDown.value = 0;
-                    // 下拉框透明    
+                    // 下拉框透明
                     ClientIdDropDown.GetComponent<Image>().color = new Color(1, 1, 1, 0);
                     // 输入框不透明，使输入框文本内容置顶
                     ClientIdInput.GetComponent<Image>().color = new Color(1, 1, 1, 1);
@@ -444,7 +502,7 @@ public class Home : MonoBehaviour
                 {
                     // 下拉框选中默认值（空白）
                     ClientSecrectDropDown.value = 0;
-                    // 下拉框透明    
+                    // 下拉框透明
                     ClientSecrectDropDown.GetComponent<Image>().color = new Color(1, 1, 1, 0);
                     // 输入框不透明，使输入框文本内容置顶
                     ClientSecrectInput.GetComponent<Image>().color = new Color(1, 1, 1, 1);
@@ -452,7 +510,7 @@ public class Home : MonoBehaviour
                 break;
         }
     }
-    
+
     public void OnMatchCodeChanged(int type)
     {
         switch (type)
@@ -476,7 +534,7 @@ public class Home : MonoBehaviour
                 {
                     // 下拉框选中默认值（空白）
                     MatchCodeDropDown.value = 0;
-                    // 下拉框透明    
+                    // 下拉框透明
                     MatchCodeDropDown.GetComponent<Image>().color = new Color(1, 1, 1, 0);
                     // 输入框不透明，使输入框文本内容置顶
                     MatchCodeInput.GetComponent<Image>().color = new Color(1, 1, 1, 1);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ public class TeamInfo : MonoBehaviour
 
     void JoinTeam()
     {
-        //Debug.Log(teamCode.text);
         JoinGroupConfig joinGroupConfig = new JoinGroupConfig()
         {
             GroupId = TeamCode.text,
@@ -48,24 +47,24 @@ public class TeamInfo : MonoBehaviour
         };
         Debug.Log(CommonUtils.JsonSerializer(joinGroupConfig));
         try {
-            Global.client.JoinGroup(joinGroupConfig, response =>
-            {
-                if (response.RtnCode == 0)
-                {
-                    Debug.Log("加入队伍成功");
-                    Global.group = new Group(Global.client, response.GroupInfo);
-                    Debug.Log("跳转场景team");
-                    Route.GoTeam();
-                }
-                else
-                {
-                    Debug.Log("加入队伍失败"+response.RtnCode+"|"+response.Msg);
-                    OpenDialog("加入队伍失败"+Util.ErrorMessage(response));
-                }
-            });
+            Global.group = Global.client.JoinGroup(joinGroupConfig, JoinGroupCallback);
         } catch(SDKException e) {
             Debug.Log("加入队伍失败"+e.code + "|" + e.Message);
             OpenDialog("加入队伍失败"+Util.ExceptionMessage(e));
+        }
+    }
+
+    public void JoinGroupCallback(CreateGroupBaseResponse response)
+    {
+        if (response.RtnCode == 0)
+        {
+            Debug.Log("加入队伍成功");
+            Route.GoTeam();
+        }
+        else
+        {
+            Debug.Log("加入队伍失败"+response.RtnCode+"|"+response.Msg);
+            OpenDialog("加入队伍失败"+Util.ErrorMessage(response));
         }
     }
 

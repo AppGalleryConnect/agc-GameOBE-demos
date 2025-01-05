@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ const gameServer: GOBERTS.GameServer = {
     onDestroyRoom(args: GOBERTS.ActionArgs): void {
         let game = gameManage.getGame(args.roomId);
         if (game === undefined) {
-            args.SDK.log.error('onStopFrameSync game not exist' + args.roomId);
+            args.SDK.log.error('onDestroyRoom game not exist' + args.roomId);
             return;
         }
         game.stopFrameClock();
@@ -127,7 +127,13 @@ const gameServer: GOBERTS.GameServer = {
     },
     onRequestFrameError(error: GOBERTS.GOBEError, args: GOBERTS.ActionArgs): void {
         // do something
-    }
+    },
+    onRoomPropertiesChangeFailed(error: GOBERTS.GOBEError, args:GOBERTS.ActionArgs): void {
+        // do something
+    },
+    onInstantMessageFailed(error: GOBERTS.GOBEError, args:GOBERTS.ActionArgs): void {
+        // do something
+    },
 }
 
 /**

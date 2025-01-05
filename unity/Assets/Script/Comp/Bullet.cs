@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ public class Bullet : MonoBehaviour
     public bool isDie = true;
     public int bullectId = 0;
     public string playerId = "";
-    
+
     public void initBullet(int x,int y,string PlayerId,int BullectId) {
         playerId = PlayerId;
         bullectId = BullectId;
@@ -36,7 +36,7 @@ public class Bullet : MonoBehaviour
         }
 
     }
-    
+
     /**
      * 碰撞检测
      * @param collision
@@ -54,7 +54,7 @@ public class Bullet : MonoBehaviour
             collisionFrameData.selfTag = FrameSync.BulletTag;//碰撞体标签
             collisionFrameData.playerId = playerId;
             collisionFrameData.bulletId = bullectId;
-            
+
             string frameData = CommonUtils.JsonSerializer(collisionFrameData);
             // 调用SDK发送帧数据
             string[] frameDatas = new string[] { frameData };

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import {RoomType} from "../commonValue";
 import global from "../../global";
 import Dialog from "../comp/Dialog";
 import {PlayerInfo} from "../../GOBE/GOBE";
-import {setRoomType} from "../function/Common";
+import {setRoomType, sleep} from "../function/Common";
 import {GameSceneType} from "../function/FrameSync";
 
 
@@ -251,28 +251,33 @@ export default class TeamRoom extends cc.Component {
         global.room.onLeave((playerInfo) => this.onLeaving(playerInfo))
     }
 
-    onDisconnect(playerInfo: PlayerInfo) {
+    async onDisconnect(playerInfo: PlayerInfo) {
         Util.printLog("玩家掉线");
         if (playerInfo.playerId === global.playerId) {
+            global.isConnected = false;
             this.reConnectRoom();
         }
     }
 
-    reConnectRoom() {
+    async reConnectRoom() {
         // 没有超过重连时间，就进行重连操作
-        global.room.reconnect().then(() => {
-            Util.printLog("玩家重连成功");
-        }).catch((error) => {
-            if (!error.code) {
-                // 加入房间请求不通就继续重连
-                this.reConnectRoom();
-                return;
-            }
-            if (error.code != 0) {
-                // 无法加入房间需要退出到大厅
-                cc.director.loadScene("hall");
-            }
-        });
+        while (!global.isConnected){
+            await global.room.reconnect().then(() => {
+                global.isConnected = true;
+                Util.printLog("玩家重连房间成功");
+            }).catch((error) => {
+                if (!error.code || error.code === 91002) {
+                    // 加入房间请求不通就继续重连
+                    Util.printLog("玩家重连房间失败，重新尝试");
+                }
+                if (error.code && (error.code === 101117 || error.code === 101107 || error.code === 101120)) {
+                    // 无法加入房间需要退出到大厅
+                    Util.printLog("玩家重连房间失败");
+                    cc.director.loadScene("hall");
+                }
+            });
+            await sleep(2000).then();
+        }
     }
 
     leaveRoom() {

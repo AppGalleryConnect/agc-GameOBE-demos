@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ export default class RoomList extends cc.Component {
         scriptComponent.fresh();
         const cls: cc.Node[] = scriptComponent.node.children;
         for (let i = 0; i < cls.length; ++i) {
-            const backGround = cls[i].getComponent("ItemTemplate").backGround
+            const backGround = cls[i].getComponent("ItemTemplate").backGround;
             backGround.on(cc.Node.EventType.TOUCH_START, () => this.freshEdit(global.roomInfos[i]));
         }
     }
@@ -176,10 +176,10 @@ export default class RoomList extends cc.Component {
     changeList() {
         if (global.roomInfos) {
             const nums: number = global.roomInfos.length;
-            if (nums <= 10) {
-                this.listContent.height = 720
+            if (nums < 7) {
+                this.listContent.height = 470;
             } else {
-                this.listContent.height = 720 + (nums - 10) * 47
+                this.listContent.height = 70 * nums;
             }
         }
     }

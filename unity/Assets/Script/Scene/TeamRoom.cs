@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -62,8 +62,8 @@ public class TeamRoom : MonoBehaviour
 
     public static readonly int FontSize = 14;
 
-    
-    // -1 断线中 0 断线重连 1 重连成功 2 重连失败 
+
+    // -1 断线中 0 断线重连 1 重连成功 2 重连失败
     private FrameSync.ReConnectState isReConnect = FrameSync.ReConnectState.reConnectionDefault;
 
     // 定时
@@ -143,7 +143,7 @@ public class TeamRoom : MonoBehaviour
                 }
 
                 // 渲染在线玩家
-  
+
                     // 非房主
                     if (player.PlayerId != roomInfo.OwnerId)
                     {
@@ -157,7 +157,7 @@ public class TeamRoom : MonoBehaviour
                         // 房主
                         PlayerOwnerName.text = player.CustomPlayerProperties != null ? player.CustomPlayerProperties : player.PlayerId;
                     }
-                
+
                 if (player.PlayerId == roomInfo.OwnerId)
                 {
                     redTeam = player.TeamId;
@@ -200,7 +200,7 @@ public class TeamRoom : MonoBehaviour
 
                 if (player.PlayerId == Global.playerId) {
                     UnReadyBtnOne.gameObject.SetActive(isPlayerStatus);
-                    ReadyBtnOne.gameObject.SetActive(!isPlayerStatus);     
+                    ReadyBtnOne.gameObject.SetActive(!isPlayerStatus);
                 }
                 PlayerOneStatus.text = isPlayerStatus ? "已准备" : "未准备";
                 if (player.IsRobot==1)
@@ -264,7 +264,7 @@ public class TeamRoom : MonoBehaviour
             });
         } catch (SDKException e){
             SDKDebugLogger.Log(e.Message);
-            if (e.code == (int) ErrorCode.INVALID_ROOM || e.code == (int) ErrorCode.PLAYERS_EXCEEDS_ROOM_MAX 
+            if (e.code == (int) ErrorCode.INVALID_ROOM || e.code == (int) ErrorCode.PLAYERS_EXCEEDS_ROOM_MAX
                 || e.code == (int) ErrorCode.INVALID_ROOM_STATUS) {
                 // 重连失败
                 Debug.Log("重连失败");
@@ -379,7 +379,7 @@ public class TeamRoom : MonoBehaviour
             }
         });
     }
-    
+
 
     // ====================广播====================
     void OnJoining()

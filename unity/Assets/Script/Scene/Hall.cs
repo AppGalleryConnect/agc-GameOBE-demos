@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ public class Hall : MonoBehaviour
     public bool Flag = true;
 
     public string Msg;
-    
+
     // Update is called once per frame
     void Update()
     {
@@ -56,6 +56,23 @@ public class Hall : MonoBehaviour
         }
     }
 
+    void Start()
+    {
+        InitListener();
+    }
+
+    public void InitListener()
+    {
+        Global.client.OnKickOff = () => showTips();
+    }
+
+    public void showTips()
+    {
+        Debug.Log("玩家被踢");
+        UnityMainThread.wkr.AddJob(() => {
+            OpenFailWindow("多端登录离线");
+        });
+    }
     //点击菜鸟区按钮
     public void OnOrdinaryRoomBtn()
     {
@@ -92,7 +109,7 @@ public class Hall : MonoBehaviour
         };
 
         // 需要根据是否非对称，选择对应的matchCode
-  
+
 
         MatchTeamInfoParam matchTeamInfoParam = new MatchTeamInfoParam()
         {
@@ -118,6 +135,7 @@ public class Hall : MonoBehaviour
                 {
                     Debug.Log("MatchPlayer start");
                     Global.isOnlineMatch = true;
+                    Util.SaveOnlineMatch(true);
                     Flag = true;
                 }
                 else
@@ -138,6 +156,7 @@ public class Hall : MonoBehaviour
                     Global.Room = response.Room;
                     Global.player = response.Room._player;
                     Global.isOnlineMatch = true;
+                    Util.SaveOnlineMatch(true);
                     Flag = true;
                 }
                 else

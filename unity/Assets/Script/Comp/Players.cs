@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class Players : MonoBehaviour {
 
         gameObject.transform.position = new Vector3(player.x, player.y, 0);
     }
-    
+
     /**
      * 碰撞检测
      * @param collision
@@ -77,7 +77,7 @@ public class Players : MonoBehaviour {
             collisionFrameData.otherTag = other.tag;//被碰撞体标签
             collisionFrameData.selfTag = FrameSync.PlayerTag;//碰撞体标签
             collisionFrameData.playerId = playerId;
-            
+
             string frameData = CommonUtils.JsonSerializer(collisionFrameData);
             // 调用SDK发送帧数据
             string[] frameDatas = new string[] { frameData };

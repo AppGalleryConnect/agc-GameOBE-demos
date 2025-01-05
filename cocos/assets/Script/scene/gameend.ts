@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -40,6 +40,16 @@ export default class GameEnd extends cc.Component {
     start() {
         this.initDialog();
         this.initListener();
+        this.reportGameEndInfo();
+    }
+
+    reportGameEndInfo() {
+        console.log('上报结算消息');
+        global.client.room.sendToServer(JSON.stringify({
+            playerId: global.client.playerId,
+            type: "GameEnd",
+            value: Math.random() > 0.5 ? 1 : 0
+        }));
     }
 
     initDialog() {

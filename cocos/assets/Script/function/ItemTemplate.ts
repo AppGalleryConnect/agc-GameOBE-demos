@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,22 +21,18 @@ import {RoomInfo} from "../../GOBE/GOBE";
 
 @ccclass
 export class ItemTemplate extends Component {
-    @property
-    public roomId: string = '';
+    @property(cc.Label)
+    public roomId: cc.Label | null = null;
     @property(cc.Label)
     public roomName: cc.Label | null = null;
-    @property(cc.Label)
-    public roomDesc: cc.Label | null = null;
     @property(cc.Label)
     public roomStatus: cc.Label | null = null;
     @property(cc.Node)
     public backGround: cc.Node | null = null;
 
     init(data: RoomInfo) {
-        this.roomId = data.roomId;
+        this.roomId.string = data.roomId.length > 20 ? data.roomId.slice(0,20) : data.roomId;
         this.roomName.string = data.roomName.length > 20 ? data.roomName.slice(0,20) + "..." : data.roomName;
-        this.roomDesc.string = data.roomId.length > 20 ? data.roomId.slice(0,20) : data.roomId;
-        this.roomStatus.string = data.roomStatus==1?"游戏中":"空闲";
-
+        this.roomStatus.string = data.roomStatus == 1 ? "游戏中" : "空闲";
     }
 }

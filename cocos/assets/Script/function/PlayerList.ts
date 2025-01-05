@@ -23,7 +23,7 @@
  *  2021.12.15-Changed interface PlayerData
  *  2021.06.28-Changed interface PlayerData
  *  2021.06.28-Changed interface PlayerList
- *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
+ *             Copyright(C)2024. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 export interface PlayerData {

@@ -33,7 +33,7 @@
  *  2023.06.28-Add method processServerInfo
  *  2023.06.28-Add method reCalcFrameState
  *  2023.06.28-Add method updateBullet
- *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
+ *             Copyright(C)2024. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 // Learn TypeScript:

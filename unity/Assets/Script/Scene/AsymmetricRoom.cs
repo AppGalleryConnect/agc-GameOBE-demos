@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class AsymmetricRoom : MonoBehaviour
     public Text PlayerTwoName = null;
 
     public Text PlayerThreeName = null;
-    
+
     public Text PlayerFourName = null;
 
     public Text PlayerOneStatus = null;
@@ -36,7 +36,7 @@ public class AsymmetricRoom : MonoBehaviour
     public Text PlayerTwoStatus = null;
 
     public Text PlayerThreeStatus = null;
-    
+
     public Text PlayerFourStatus = null;
 
     public Button UnReadyBtnOne = null;
@@ -52,16 +52,16 @@ public class AsymmetricRoom : MonoBehaviour
     public Button ReadyBtnTwo = null;
 
     public Button ReadyBtnThree = null;
-    
+
     public Button ReadyBtnFour = null;
 
     public Button StartBtn = null;
 
     public Dialog Dialog = null;
-    
+
     public static readonly int FontSize = 14;
-    
-    // -1 断线中 0 断线重连 1 重连成功 2 重连失败 
+
+    // -1 断线中 0 断线重连 1 重连成功 2 重连失败
     private FrameSync.ReConnectState isReConnect = FrameSync.ReConnectState.reConnectionDefault;
 
     public Reloading Loading = null;
@@ -69,7 +69,7 @@ public class AsymmetricRoom : MonoBehaviour
     // 定时
     private float interval = 2f; // 每隔2秒执行一次
     private float count = 0;
-    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -167,10 +167,10 @@ public class AsymmetricRoom : MonoBehaviour
                 }
             }
         }
-       
+
         for (int i = 0; i < playerInfos.Length; i++)
         {
-          
+
             //房主为黄队，渲染红队
             if (!ownerIsRed && playerInfos[i].TeamId != ownerTeamId)
             {
@@ -219,7 +219,7 @@ public class AsymmetricRoom : MonoBehaviour
                 }
                 PlayerOneName.text = customPlayerProperties.PlayerName;
                 if (player.PlayerId == Global.playerId)
-                {    // 当前玩家才考虑按钮的显示与隐藏 
+                {    // 当前玩家才考虑按钮的显示与隐藏
                     UnReadyBtnOne.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
                     ReadyBtnOne.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
                 }
@@ -233,7 +233,7 @@ public class AsymmetricRoom : MonoBehaviour
                 if (player.IsRobot==1)
                 {
                     PlayerTwoName.fontSize = FontSize;
-                   
+
                 }
                 PlayerTwoName.text = customPlayerProperties.PlayerName;
                 if (player.PlayerId == Global.playerId)
@@ -266,7 +266,7 @@ public class AsymmetricRoom : MonoBehaviour
                 break;
         }
 
-     
+
         return allReadyCount;
     }
     //渲染黄队玩家
@@ -280,7 +280,7 @@ public class AsymmetricRoom : MonoBehaviour
         PlayerFourName.text = customPlayerProperties.PlayerName;
 
         if (player.PlayerId == Global.playerId)
-        {    // 当前玩家才考虑按钮的显示与隐藏 
+        {    // 当前玩家才考虑按钮的显示与隐藏
             UnReadyBtnFour.gameObject.SetActive(isPlayerStatus);  // "取消准备"按钮激活
             ReadyBtnFour.gameObject.SetActive(!isPlayerStatus); // "准备"按钮隐藏
         }
@@ -331,7 +331,7 @@ public class AsymmetricRoom : MonoBehaviour
             }
         });
     }
-    
+
     // 准备
     public void Ready()
     {
@@ -380,7 +380,7 @@ public class AsymmetricRoom : MonoBehaviour
                         Destroy(loading);
                         isReConnect = FrameSync.ReConnectState.reConnectionDefault;
                     });
-                } 
+                }
                 if (response.RtnCode == ((int)ErrorCode.SDK_NOT_IN_ROOM))
                 {
                     Debug.Log("玩家重连失败");
@@ -392,7 +392,7 @@ public class AsymmetricRoom : MonoBehaviour
             });
         } catch (SDKException e){
             SDKDebugLogger.Log(e.Message);
-            if (e.code == (int) ErrorCode.INVALID_ROOM || e.code == (int) ErrorCode.PLAYERS_EXCEEDS_ROOM_MAX 
+            if (e.code == (int) ErrorCode.INVALID_ROOM || e.code == (int) ErrorCode.PLAYERS_EXCEEDS_ROOM_MAX
                 || e.code == (int) ErrorCode.INVALID_ROOM_STATUS) {
                 // 重连失败
                 Debug.Log("重连失败");
@@ -405,7 +405,7 @@ public class AsymmetricRoom : MonoBehaviour
             }
         }
     }
-    
+
 
 
     //=====================广播=====================
@@ -429,14 +429,14 @@ public class AsymmetricRoom : MonoBehaviour
         {
             UnityMainThread.wkr.AddJob(() => {
                 Reloading loading = Instantiate(Loading);
-                loading.Open("重连中...");
+                loading.Open("房间重连中...");
                 isReConnect = FrameSync.ReConnectState.reConnectIng;
             });
         }
     }
 
     private void OnStartFrameSync()
-    {     
+    {
         Debug.Log("广播--开始帧同步");
         Global.state = 1;
         Global.keyOperate = 1;

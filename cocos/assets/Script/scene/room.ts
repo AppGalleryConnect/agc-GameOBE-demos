@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,13 +16,22 @@
 
 import global from "../../global";
 import * as Util from "../../util";
-import { PlayerInfo, UpdateCustomStatusResponse, UpdateCustomPropertiesResponse, RoomInfo, RecvFromServerInfo } from "../../GOBE/GOBE";
+import {
+    PlatformType,
+    PlayerInfo,
+    RecvFromServerInfo,
+    RoomInfo,
+    UpdateCustomPropertiesResponse,
+    UpdateCustomStatusResponse
+} from "../../GOBE/GOBE";
 import Dialog from "../comp/Dialog";
-import {RoomType} from "../commonValue";
+import {LockType, RoomType} from "../commonValue";
 import {setRoomType, sleep} from "../function/Common";
 import Button = cc.Button;
 import Label = cc.Label;
 import {GameSceneType} from "../function/FrameSync";
+import error = cc.error;
+import {errorMessage} from "../../util";
 
 const {ccclass, property} = cc._decorator;
 
@@ -225,7 +234,7 @@ export default class Room extends cc.Component {
     onRoomPropertiesChange(roomInfo: RoomInfo) {
         // TODO拿到roomInfo重置本地数据，刷新页面
         console.log('onRoomPropertiesChange ' + JSON.stringify(roomInfo));
-        this.isLockRoom.isChecked = roomInfo.isLock == 1;
+        this.isLockRoom.isChecked = roomInfo.isLock == LockType.Locked;
     }
 
     // 准备
@@ -245,7 +254,7 @@ export default class Room extends cc.Component {
     // 锁定与解锁房间
     lockRoom() {
         if (global.room && global.room.ownerId === global.room.playerId) {
-            global.room.updateRoomProperties({isLock: !this.isLockRoom.isChecked ? 1 : 0});
+            global.room.updateRoomProperties({roomType: 'lock-type' , isLock: !this.isLockRoom.isChecked ? LockType.Locked : LockType.UnLocked});
         }
     }
 
@@ -310,7 +319,7 @@ export default class Room extends cc.Component {
             roomInfo.ownerId === global.playerId,
             roomInfo.players.length,
             readyStatus === 1,
-            roomInfo.isLock == 1
+            roomInfo.isLock == LockType.Locked
         );
     }
 
@@ -545,9 +554,21 @@ export default class Room extends cc.Component {
             } else {
                 // 没有超过重连时间，就进行重连操作
                 while (!global.isConnected){
-                    // 1秒重连一次，防止并发过大游戏直接卡死
-                    await sleep(1000).then();
-                    await global.room.reconnect();
+                    await global.room.reconnect().then(() => {
+                        Util.printLog("玩家重连房间成功");
+                    }).catch((error) => {
+                        if (!error.code || error.code === 91002) {
+                            // 加入房间请求不通就继续重连
+                            Util.printLog("玩家重连房间失败，重新尝试");
+                        }
+                        if (error.code && (error.code === 101117 || error.code === 101107 || error.code === 101120)) {
+                            // 无法加入房间需要退出到大厅
+                            Util.printLog("玩家重连房间失败");
+                            cc.director.loadScene("hall");
+                        }
+                    });
+                    // 2秒重连一次，防止并发过大游戏直接卡死
+                    await sleep(2000).then();
                 }
             }
         } else {

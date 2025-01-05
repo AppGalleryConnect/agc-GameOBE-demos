@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ public static class SDKLog
         "${longdate}|${callsite:fileName=true}|${logger}|${level:uppercase=true}|${threadid}|${message}|${exception:format=tostring}";
 
     private static Target runLog, sdkDebuggerLog, requestOutLog, testLog;
-    
+
     private static LoggingConfiguration config = new LoggingConfiguration();
-    
+
     private static void InitConsoleTargetLog()
     {
         sdkDebuggerLog = new ConsoleTarget()
@@ -39,7 +39,7 @@ public static class SDKLog
             Layout = layout,
             AutoFlush = true
         };
-        
+
         // 通用的所有run日志
         runLog = new ConsoleTarget()
         {
@@ -47,7 +47,7 @@ public static class SDKLog
             Layout = layout,
             AutoFlush = true
         };
-        
+
         // requestOutLog日志
         requestOutLog = new ConsoleTarget()
         {
@@ -88,7 +88,7 @@ public static class SDKLog
             ConcurrentWrites = false,
             KeepFileOpen = false
         };
-        
+
         // SDKDebugger日志
         sdkDebuggerLog = new FileTarget()
         {
@@ -104,11 +104,11 @@ public static class SDKLog
             KeepFileOpen = false
         };
     }
-    
+
     public static void InitSDKLog(LogLevel logLevel)
     {
         config.LoggingRules.Clear();
-        
+
         if (SDKLog.SDKLogTarget == "file")
         {
             InitFileTargetLog();
@@ -117,22 +117,22 @@ public static class SDKLog
         {
             InitConsoleTargetLog();
         }
-        
+
         // 通用的所有run日志
-        config.LoggingRules.Add(new LoggingRule("runLog", 
-            logLevel, 
+        config.LoggingRules.Add(new LoggingRule("runLog",
+            logLevel,
             new AsyncTargetWrapper(runLog, 10000, AsyncTargetWrapperOverflowAction.Block)));
-        
+
         // requestOutLog日志
-        config.LoggingRules.Add(new LoggingRule("requestOutLog", 
-            logLevel, 
+        config.LoggingRules.Add(new LoggingRule("requestOutLog",
+            logLevel,
             new AsyncTargetWrapper(requestOutLog, 10000, AsyncTargetWrapperOverflowAction.Block)));
-        
+
         // sdkDebuggerLog日志
-        config.LoggingRules.Add(new LoggingRule("sdkDebuggerLog", 
-            logLevel, 
+        config.LoggingRules.Add(new LoggingRule("sdkDebuggerLog",
+            logLevel,
             new AsyncTargetWrapper(sdkDebuggerLog, 10000, AsyncTargetWrapperOverflowAction.Block)));
-        
+
         LogManager.Configuration = config;
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ using Com.Huawei.Game.Gobes;
 public class CreateRoom : MonoBehaviour
 {
     private string roomName;
-    
+
     public Dialog Dailog;
 
     // 0:公开房间,1:私有房间
@@ -52,19 +52,16 @@ public class CreateRoom : MonoBehaviour
         Global.client.CreateRoom(createRoomConfig, playerConfig, response => {
             if (response.RtnCode != 0) {
                 Dialog dialog = Instantiate(Dailog);
-                dialog.Open("提示", "创建房间失败" + Util.ErrorMessage(response)); 
+                dialog.Open("提示", "创建房间失败" + Util.ErrorMessage(response));
                 return;
             }
-            else
-            {
-                Global.Room = response.Room;
-                Global.player = response.Room._player;
-                Debug.Log(response.Room.roomInfo);
-            }
+            Global.Room = response.Room;
+            Global.player = response.Room._player;
+            Debug.Log(response.Room.roomInfo);
             // 跳转到房间
             Route.GoRoom();
         });
-        
+
     }
 
     // 点击取消创建房间按钮

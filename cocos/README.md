@@ -107,8 +107,8 @@ The following is a brief description of the scene design files and corresponding
 
 * These pages are used to show and replay game historical records. When you click one item, you would enter the game scene.
 
-  \assets\Scene\recordLIst.fire  
-  \assets\Script\scene\recordLIst.ts
+  \assets\Scene\recordList.fire  
+  \assets\Script\scene\recordList.ts
 
 * After the homeowner clicks to start the game, the player enters the game. Then, the game begins.
 

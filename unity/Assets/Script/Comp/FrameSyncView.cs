@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public class FrameSyncView : MonoBehaviour, ICallback
     public Button stopFrameButton = null;
 
     public Button fireButton = null;
-    
+
     public Button watcherLeaveButton = null;
 
     // 重开一局弹框
@@ -53,7 +53,7 @@ public class FrameSyncView : MonoBehaviour, ICallback
     private static int[] arr4 = {90, 0, 180};
 
     // Start is called before the first frame update
-     void Start() {  
+     void Start() {
         InitView();
         InitListener();
         InitRobotSchedule();
@@ -70,7 +70,7 @@ public class FrameSyncView : MonoBehaviour, ICallback
             string data = Global.room.roomInfo.CustomRoomProperties;
             SaveToPropertiesInfo saveToPropertiesInfo = CommonUtils.JsonDeserializer<SaveToPropertiesInfo>(data);
             List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList = saveToPropertiesInfo.playerList;
-      
+
             foreach (PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in playerList)
             {
                 FrameSync.SetPlayerCMD(player.id, player.state.cmd, player.x, player.y);
@@ -263,7 +263,7 @@ public class FrameSyncView : MonoBehaviour, ICallback
             };
 
             UpdateRoomProperties(updateRoomProperties);
-            SDKDebugLogger.Log("saveRoomState currentRoomFrameId={0} , currentOwner={1}", 
+            SDKDebugLogger.Log("saveRoomState currentRoomFrameId={0} , currentOwner={1}",
                 saveToPropertiesInfo.currentRoomFrameId,Global.Room.roomInfo.OwnerId);
         }
     }
@@ -518,8 +518,23 @@ public class FrameSyncView : MonoBehaviour, ICallback
                 Debug.Log("退出房间成功");
                 if (Global.isReconnect)
                 {
-                    UnityMainThread.wkr.AddJob(Route.GoHall);
                     Global.isReconnect = false;
+                    if (Global.isTeamMode&& !Global.isOnlineMatch)
+                    {
+                        UnityMainThread.wkr.AddJob(Route.GoTeam);
+                    }
+                    else
+                    {
+                        if (Global.isOnlineMatch) {
+                            // 在线匹配
+                            Global.isOnlineMatch = false;
+                            UnityMainThread.wkr.AddJob(() =>
+                            {
+                                Util.SaveOnlineMatch(false);
+                            });
+                        }
+                        UnityMainThread.wkr.AddJob(Route.GoHall);
+                    }
                     return;
                 }
                 if (Global.isTeamMode && !Global.isOnlineMatch) {
@@ -530,6 +545,11 @@ public class FrameSyncView : MonoBehaviour, ICallback
                     if (Global.isOnlineMatch) {
                         // 在线匹配
                         Global.isOnlineMatch = false;
+                        UnityMainThread.wkr.AddJob(() =>
+                        {
+                            Util.SaveOnlineMatch(false);
+                        });
+
                     }
                     UnityMainThread.wkr.AddJob(Route.GoHall);
                 }
@@ -568,7 +588,7 @@ public class FrameSyncView : MonoBehaviour, ICallback
                     FrameSync.frameSyncBulletList.Clear();
                     Debug.Log("GoGameEndView");
                     Route.GoGameEndView();
-                }); 
+                });
             }
         } else {
             FrameSync.frameSyncPlayerList.Clear();
@@ -596,7 +616,7 @@ public class FrameSyncView : MonoBehaviour, ICallback
             }
         }
     }
-    
+
     void WatcherLeaveRoom() {
         Global.client.LeaveRoom(res =>
         {

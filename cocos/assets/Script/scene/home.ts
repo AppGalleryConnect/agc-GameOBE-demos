@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import {LoginType, RoomType} from "../commonValue";
 import * as Util from "../../util";
 import global from "../../global";
 import Dialog from "../comp/Dialog";
+import config from "../../config";
+import Reloading from "../comp/Reloading";
 
 const {ccclass, property} = cc._decorator;
 
@@ -66,12 +68,14 @@ export default class Home extends cc.Component {
         };
         if (cc.sys.ANDROID === cc.sys.platform) {
             clientConfig = Object.assign(clientConfig, {
-                platform: window.GOBE.PlatformType.CC_ANDROID,
+                platform: window.GOBE.PlatformType.ANDROID,
                 cerPath: cc.url.raw('resources/endpoint-cert.cer'),
             })
         }
+        window.GOBE.Logger.level = window.GOBE.LogLevel.DEBUG;
         global.client = new window.GOBE.Client(clientConfig);
         global.client.onInitResult((resultCode) => this.onInitResult(resultCode));
+        global.client.onMatch((onMatchResponse) => this.onMatch(onMatchResponse));
         Util.printLog("正在初始化 SDK");
         global.client.init().catch((e) => {
             Util.printLog('init err: ' + e);
@@ -87,48 +91,81 @@ export default class Home extends cc.Component {
             // demo生成昵称保存到global
             global.playerName = Util.mockPlayerName();
             Util.printLog('init success');
-            if(global.client.lastRoomId){
-                Util.printLog('房间Id' + global.client.lastRoomId);
-                global.client.joinRoom(global.client.lastRoomId,
-                    {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
-                    Util.printLog("加入房间成功");
-                    global.room = room;
-                    global.player = room.player;
-                    Util.printLog('玩家id ：' + global.player.playerId + '  房主id ：' + global.room.ownerId);
-                    // 重置帧id
-                    let roomProp = JSON.parse(global.room.customRoomProperties);
-                    if(roomProp.curFrameId) {
-                        room.resetRoomFrameId(roomProp.curFrameId);
-                    }
-                    if (roomProp.roomType) {
-                        global.roomType = roomProp.roomType;
-                        if(roomProp.roomType === RoomType.OneVOne) {
-                            cc.director.loadScene("room");
-                        } else if (roomProp.roomType === RoomType.TwoVTwo) {
-                            cc.director.loadScene("teamroom");
-                        } else if (roomProp.roomType === RoomType.ThreeVOne) {
-                            cc.director.loadScene("asymmetricroom");
+            if (global.client.lastRoomId || global.client.lastGroupId){
+                if(global.client.lastRoomId) {
+                    Util.printLog('房间Id' + global.client.lastRoomId);
+                    global.client.joinRoom(global.client.lastRoomId,
+                        {customPlayerStatus: 0, customPlayerProperties: ""}).then((room) => {
+                        Util.printLog("加入房间成功");
+                        global.room = room;
+                        global.player = room.player;
+                        Util.printLog('玩家id ：' + global.player.playerId + '  房主id ：' + global.room.ownerId);
+                        // 重置帧id
+                        let roomProp = JSON.parse(global.room.customRoomProperties);
+                        global.isOnlineMatch = roomProp.isOnlineMatch;
+                        Util.printLog("isOnlineMatch:"+global.isOnlineMatch);
+                        if (roomProp.curFrameId) {
+                            room.resetRoomFrameId(roomProp.curFrameId);
                         }
-                    }
-                }).catch((e) => {
-                    Util.printLog('加入房间失败，roomId： ' + global.client.lastRoomId);
-                    Dialog.open("提示", "加入房间失败" + Util.errorMessage(e));
-                    global.client.leaveRoom().then(() => {
-                        Util.printLog("leaveRoom success");
-                        global.roomType = RoomType.NULL;
+                        if (roomProp.roomType) {
+                            global.roomType = roomProp.roomType;
+                            if(roomProp.roomType === RoomType.OneVOne) {
+                                global.jumpType = RoomType.OneVOne;
+                                cc.director.loadScene("room");
+                            } else if (roomProp.roomType === RoomType.TwoVTwo) {
+                                global.jumpType = RoomType.TwoVTwo;
+                                cc.director.loadScene("teamroom");
+                            } else if (roomProp.roomType === RoomType.ThreeVOne) {
+                                global.jumpType = RoomType.ThreeVOne;
+                                cc.director.loadScene("asymmetricroom");
+                            }else{
+                                global.jumpType = RoomType.OneGroup;
+                            }
+                        }
+                    }).catch((e) => {
+                        Util.printLog('加入房间失败，roomId： ' + global.client.lastRoomId);
+                        Dialog.open("提示", "加入房间失败" + Util.errorMessage(e));
+                        global.client.leaveRoom().then(() => {
+                            Util.printLog("leaveRoom success");
+                            global.roomType = RoomType.NULL;
+                        });
+                        cc.director.loadScene("hall");
                     });
-                    cc.director.loadScene("hall");
-                });
-            }
-            else{
-                global.roomType = RoomType.NULL;
+                }
+                if (global.client.lastGroupId){
+                    //global.roomType = RoomType.NULL;
+                    // 检测是否要进行group重连
+                    console.log('lastGroupId存在：' + global.client.lastGroupId);
+                    global.client.joinGroup(global.client.lastGroupId).then((group) => {
+                        global.group = group;
+                        global.player = group.player;
+                        if (!global.client.lastRoomId || global.jumpType === RoomType.OneGroup)
+                            cc.director.loadScene("team");
+                    });
+                }
+            } else{
                 cc.director.loadScene("hall");
             }
-
-            window.GOBE.Logger.level = window.GOBE.LogLevel.INFO;
+            window.GOBE.Logger.level = window.GOBE.LogLevel.DEBUG;
             Util.printLog('init success');
         } else {
             Util.printLog('init failed');
+        }
+    }
+
+    onMatch(res){
+        Util.printLog('触发匹配');
+        Util.printLog(global.group.customGroupProperties);
+        if (res.rtnCode === 0) {
+            Util.printLog('在线匹配成功:' + res.room);
+            global.room = res.room;
+            global.player = res.room.player;
+            global.group = global.client.group;
+            cc.director.loadScene(config.asymmetric ? "asymmetricroom" : "teamroom");
+            Reloading.close();
+        } else {
+            Util.printLog("在线匹配失败" + Util.errorMessage(res));
+            Reloading.close();
         }
     }
 

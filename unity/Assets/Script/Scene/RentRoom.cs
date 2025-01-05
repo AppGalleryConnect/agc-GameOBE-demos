@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class RentRoom : MonoBehaviour
     public Button leaveBtn;
 
     public Button prepareOrStartBtn;
-    
+
     public Toggle IsLock;
 
     public GameObject message;
@@ -98,7 +98,7 @@ public class RentRoom : MonoBehaviour
             Debug.Log("OnUpdateCustomStatus " + status);
             UnityMainThread.wkr.AddJob(GetRoomInfo);
         };
-        
+
         Global.Room.OnRoomPropertiesChange = (roomInfo) =>
         {
             Debug.Log("OnRoomPropertiesChange :" + CommonUtils.JsonSerializer(roomInfo));
@@ -116,7 +116,8 @@ public class RentRoom : MonoBehaviour
             UpdateRoomPropertiesConfig updateRoomProperties = new UpdateRoomPropertiesConfig
             {
                 IsLock = isLockTag,
-                CustomRoomProperties =  Global.room.roomInfo.CustomRoomProperties == null?"":Global.room.roomInfo.CustomRoomProperties
+                CustomRoomProperties =  Global.room.roomInfo.CustomRoomProperties == null?"":Global.room.roomInfo.CustomRoomProperties,
+                RoomType = "1"
             };
             Global.room.UpdateRoomProperties(updateRoomProperties, res =>
             {
@@ -131,7 +132,7 @@ public class RentRoom : MonoBehaviour
             });
         }
     }
-    
+
     private void OnReceiveFromServer(RecvFromServerInfo data)
     {
         // TODO根据返回值检测所有玩家加载进度是否都达到100%，是则切换至帧同步场景
@@ -343,7 +344,7 @@ public class RentRoom : MonoBehaviour
         UnityMainThread.wkr.AddJob(GetRoomInfo);
         prepareOrStartBtn.GetComponent<Button>().interactable = false;
         InitServerGameData();
-        
+
         // 开始上报自己的加载进度
         ReportPorgress();
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class Face : MonoBehaviour
         }
 
         if (param.isOwner && roleIsOwner)
-        {      
+        {
             dismissBtn.SetActive(true);
         }
         else if (param.isOwner && !roleIsOwner)
@@ -72,7 +72,7 @@ public class Face : MonoBehaviour
             slider.transform.Find("value").GetComponent<Text>().text = "进度" + param.progressValue * 100 + "%";
         }
     }
-    
+
     public void DismissRoom() {
         Debug.Log("解散房间");
         Global.client.DismissRoom(res =>

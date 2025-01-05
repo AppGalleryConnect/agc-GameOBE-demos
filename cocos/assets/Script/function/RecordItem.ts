@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -62,16 +62,17 @@ export class RecordItem extends Component {
                         .then(async (res: ArrayBuffer) => {
                             const pathName = remoteUrl.substring(remoteUrl.lastIndexOf('_') + 1, remoteUrl.lastIndexOf('.'));
                             const fileName = remoteUrl.substring(remoteUrl.lastIndexOf('/') + 1, remoteUrl.lastIndexOf('.'));
-                            let result;
-                            if (cc.sys.isBrowser) {
+                            let checkSumSuccess = false;
+                            // 无crypto.subtle.digest方法，跳过sha256sum校验
+                            if ((typeof crypto === "object" && typeof crypto.subtle === "object"
+                                && typeof crypto.subtle.digest === "function")) {
                                 const sha256 = await getFileHash(res);
-                                result = sha256 == fileSha256;
-                                console.log(`文件完整性校验成功,sha256: ${sha256}`);
+                                checkSumSuccess = sha256 === fileSha256;
+                                console.log(`文件完整性校验,result=${checkSumSuccess},sha256: ${sha256}`);
+                            } else {
+                                checkSumSuccess = true;
                             }
-                            else {
-                                result = true;
-                            }
-                            if (result) {
+                            if (checkSumSuccess) {
                                 let newZip = new JSZip();
                                 newZip.loadAsync(res).then(zip => {
                                     zip.file(`${pathName}/${fileName}.data`).async('text').then(data => {

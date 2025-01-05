@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,17 +28,17 @@ public class GameEnd : MonoBehaviour, ReopenCallback
     public Button leaveBtn;
 
     public GameObject message;
-    
+
     // 重开一局预制件
     public ReopenGame reopenGame = null;
-    
+
     void Start() {
         InitListener();
     }
 
     public void InitListener() {
         leaveBtn.onClick.AddListener(() => Leave());
-        
+
         Global.Room.OnRecvFromServer = (data) =>
         {
             OnReceiveFromServer(data);
@@ -112,8 +112,8 @@ public class GameEnd : MonoBehaviour, ReopenCallback
         doalog.AddEventListener(this);
         doalog.Open("提示", "游戏已结束，还想要重开一局吗？");
     }
-    
-    
+
+
     // 重开一局
     public void Reopen() {
         Global.room.Update(response => {
@@ -135,8 +135,8 @@ public class GameEnd : MonoBehaviour, ReopenCallback
     public void Exit() {
         LeaveRoom();
     }
-    
-    
+
+
     // 用户是否还在房间中
     Boolean IsInRoom(RoomInfo room) {
         PlayerInfo[] players = room.Players;
@@ -149,7 +149,7 @@ public class GameEnd : MonoBehaviour, ReopenCallback
         }
         return false;
     }
-    
+
     void LeaveRoom() {
         Global.client.LeaveRoom(res =>
         {
@@ -166,7 +166,7 @@ public class GameEnd : MonoBehaviour, ReopenCallback
             }
         });
     }
-    
+
 
     private void CreateMessage(string tip)
     {

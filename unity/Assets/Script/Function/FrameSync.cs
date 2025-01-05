@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class FrameSync {
         reConnectFail = 2, // 重连失败
         reConnectIng = 3 // 重连中
     };
-    
+
     // 游戏帧同步命令
     [DataContract]
     public enum FrameSyncCmd {
@@ -58,14 +58,14 @@ public class FrameSync {
         red = 0,
         yellow = 1,
     };
-    
-    
+
+
     public enum RoomType {
         ROOM = 0,
         TEAMROOM = 1,
         ASYCROOM = 2
     }
-    
+
     // 玩家
     public class Player {
         public FrameSyncCmd cmd { get; set; }
@@ -99,7 +99,7 @@ public class FrameSync {
         [DataMember]
         public FrameSyncCmd cmd { get; set; }
     }
-    
+
     //碰撞帧数据
     [DataContract]
     public class CollisionFrameData {
@@ -111,7 +111,7 @@ public class FrameSync {
     public static List<PlayerList<Player>.PlayerData<Player>> frameSyncPlayerList = new PlayerList<Player>().Players;
 
     public static List<CloudList<Cloud>.CloudData<Cloud>> cloudsList = new CloudList<Cloud>().Clouds;
-    
+
     //子弹列表
     public static List<BulletList<Bullet>.BulletData<Bullet>> frameSyncBulletList = new BulletList<Bullet>().bullets;
 
@@ -167,7 +167,7 @@ public class FrameSync {
                         Debug.Log("发生碰撞:"+data);
                         HandleCollide(cllisionFrameData);
                     }
-                    else 
+                    else
                     {
                         PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player =
                             CommonUtils.JsonDeserializer<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>>(data);
@@ -394,7 +394,7 @@ public class FrameSync {
                 }
             }
         }
-        
+
         // 子弹碰撞飞机(子弹发出的指令) - 子弹销毁
         if (FrameSync.BulletTag.Equals(collisionFrameData.selfTag) && FrameSync.PlayerTag.Equals(collisionFrameData.otherTag))
         {
@@ -402,8 +402,8 @@ public class FrameSync {
                  && item.bulletId == collisionFrameData.bulletId)).ToList();
         }
     }
-    
-    static void UpdateCircleColor() 
+
+    static void UpdateCircleColor()
     {
         GameObject circle = GameObject.Find("circle_special(Clone)").gameObject;
         circle.GetComponent<Renderer>().material.color = Color.red;

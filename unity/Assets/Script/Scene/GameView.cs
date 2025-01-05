@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,16 +33,16 @@ public class GameView : MonoBehaviour {
 
     // 云朵初始帧
     private static int CloudFirstFrame = 100;
-    
+
     private static volatile int RequestSize = 0;
 
     private static bool isRequestingFrame = false;
-    
+
     private static int lastUsedFrameId = 0;
 
     // 出现云朵的频次
     private static readonly int _frequency = 50;
-    
+
     // 圆圈显隐状态
     public static bool circleDisplay = true;
 
@@ -50,11 +50,13 @@ public class GameView : MonoBehaviour {
     // -1 断线中 0 断线重连 1 重连成功 2 重连失败
     private FrameSync.ReConnectState isReConnect = FrameSync.ReConnectState.reConnectionDefault;
 
+    private FrameSync.ReConnectState isGroupReConnect = FrameSync.ReConnectState.reConnectionDefault;
+
     private float interval = 2f; // 每隔2秒执行一次
     private float count = 0;
 
     public static List<ServerFrameMessage> frameMessages = new List<ServerFrameMessage>();
-    
+
     public static List<ServerFrameMessage> replayframeMessages = new List<ServerFrameMessage>();
 
     // Start is called before the first frame update
@@ -83,6 +85,11 @@ public class GameView : MonoBehaviour {
             {
                 ReConnect();
             }
+
+            if (isGroupReConnect == FrameSync.ReConnectState.reConnectIng)
+            {
+                ReConnectGroup();
+            }
         }
 
         if (isRequestingFrame && RequestSize !=0)
@@ -94,6 +101,34 @@ public class GameView : MonoBehaviour {
             BatchRecvFrame(frameMessages);
         }
 
+    }
+
+    private void ReConnectGroup()
+    {
+        try {
+            Global.group.Reconnect(response => {
+                if (response.RtnCode == 0) {
+                    // 重连成功
+                    Debug.Log("玩家重连小队成功");
+                    UnityMainThread.wkr.AddJob(() => {
+                        isGroupReConnect = FrameSync.ReConnectState.reConnectionDefault;
+                    });
+                }
+            });
+        } catch (SDKException e){
+            SDKDebugLogger.Log(e.Message);
+            if (e.code == (int) ErrorCode.GROUP_NOT_EXIST || e.code == (int) ErrorCode.CURRENT_GROUP_IS_LOCKED
+                                                          || e.code == (int) ErrorCode.CURRENT_GROUP_IS_FULL) {
+                // 重连失败
+                Debug.Log("重连失败");
+                UnityMainThread.wkr.AddJob(() => {
+                    Route.GoHall();
+                    isGroupReConnect = FrameSync.ReConnectState.reConnectionDefault;
+                });
+            } else {
+                SDKDebugLogger.Log("玩家持续重连中...");
+            }
+        }
     }
 
     void InitView() {
@@ -114,6 +149,22 @@ public class GameView : MonoBehaviour {
             Global.Room.OnDisconnect = playerInfo => OnDisconnect(playerInfo);
             Global.Room.OnRequestFrameError = response => OnRequestFrameError(response);
         }
+
+        if (Global.group != null)
+        {
+            Global.group.OnDisconnect = playerInfo => { OnGroupDisconnect(playerInfo); };
+        }
+    }
+
+    private void OnGroupDisconnect(FramePlayerInfo playerInfo)
+    {
+        Debug.Log("广播--小队玩家掉线");
+        if (playerInfo.PlayerId == Global.playerId) {
+            UnityMainThread.wkr.AddJob(() => {
+                Debug.Log("小队重连中");
+                isGroupReConnect = FrameSync.ReConnectState.reConnectIng;
+            });
+        }
     }
 
     private void OnRequestFrameError(BaseResponse response)
@@ -123,14 +174,14 @@ public class GameView : MonoBehaviour {
             UnityMainThread.wkr.AddJob(() =>
             {
                 Reloading loading = Instantiate(Loading);
-                loading.Open("重连中...");
+                loading.Open("房间重连中...");
                 isReConnect = FrameSync.ReConnectState.reConnectIng;
             });
         }
 
         if (response.RtnCode == (int)ErrorCode.SDK_AUTO_REQUEST_FRAME_FAILED)
         {
-            
+
             UnityMainThread.wkr.AddJob(() =>
             {
                 if (!string.IsNullOrEmpty(Global.room.roomInfo.CustomRoomProperties) && Global.state == 1 )
@@ -139,7 +190,7 @@ public class GameView : MonoBehaviour {
                     string data = Global.room.roomInfo.CustomRoomProperties;
                     SaveToPropertiesInfo saveToPropertiesInfo = CommonUtils.JsonDeserializer<SaveToPropertiesInfo>(data);
                     List<PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player>> playerList = saveToPropertiesInfo.playerList;
-      
+
                     foreach (PlayerList<FrameSync.Player>.PlayerData<FrameSync.Player> player in playerList)
                     {
                         FrameSync.SetPlayerCMD(player.id, player.state.cmd, player.x, player.y);
@@ -216,12 +267,12 @@ public class GameView : MonoBehaviour {
         {
             circleDisplay = false;
         }
-        
+
         //更新子弹
         if(frameId % 10 == 0){
             UpdateBulletFly();
         }
-        
+
         float seed = frame.Ext != null ? frame.Ext.Seed : 0f;
         // 绘制随机云朵
         GetRandomCloud(frameId, seed);
@@ -345,7 +396,7 @@ public class GameView : MonoBehaviour {
             }
         }
     }
-    
+
     void BatchRecvReplayFrame(List<ServerFrameMessage> frames)
     {
         if (frames != null && frames.Count > 0)
@@ -384,7 +435,7 @@ public class GameView : MonoBehaviour {
         Debug.Log("广播--解散房间");
         if (Global.isReconnect)
         {
-            UnityMainThread.wkr.AddJob(Route.GoHall); 
+            UnityMainThread.wkr.AddJob(Route.GoHall);
         }
         if (Global.isTeamMode && !Global.isOnlineMatch) {
             // 组队匹配
@@ -401,7 +452,7 @@ public class GameView : MonoBehaviour {
         if (playerInfo.PlayerId == Global.playerId) {
             UnityMainThread.wkr.AddJob(() => {
                 Reloading loading = Instantiate(Loading);
-                loading.Open("重连中...");
+                loading.Open("房间重连中...");
                 isReConnect = FrameSync.ReConnectState.reConnectIng;
             });
         }
@@ -447,7 +498,7 @@ public class GameView : MonoBehaviour {
         }
     }
 
- 
+
 
     void OnDestroy() {
         FrameSync.ClearFrames();

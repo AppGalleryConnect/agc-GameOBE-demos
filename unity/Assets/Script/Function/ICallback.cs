@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 public interface ICallback {
 
-    // 取消
+    // 鍙栨秷
     void Cancel();
 
-    // 确认
+    // 纭
     void Confirm();
 
 }

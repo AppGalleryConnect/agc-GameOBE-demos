@@ -1,5 +1,5 @@
 ﻿/**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,10 +39,10 @@ public class GameCanvas : MonoBehaviour {
 
     // 子弹预制件
     public GameObject bullectPrefab;
-    
+
     // 圆圈预制件
     public GameObject circlePrefab;
-    
+
     public void SetCircle(bool circleDisplay)
     {
         if (circlePrefab == null) {
@@ -57,7 +57,7 @@ public class GameCanvas : MonoBehaviour {
                 Circle circle =circlesPool[0].GetComponent<Circle>();
                 circle.initCircle();
             }
-            
+
         }
         else
         {
@@ -71,7 +71,7 @@ public class GameCanvas : MonoBehaviour {
             circlesPool.Clear();
         }
     }
-    
+
     public void SetPlayers(List<PlayerData<FrameSync.Player>> players)
     {
         if (playerPrefab == null) {

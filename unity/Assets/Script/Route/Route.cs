@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ public class Route {
     public static void GoHome() {
         SceneManager.LoadScene("Home");
     }
-    
+
     public static void GoHall() {
         Global.room = null;
         SceneManager.LoadScene("Hall");
@@ -31,15 +31,15 @@ public class Route {
     public static void GoRoom() {
         SceneManager.LoadScene("Room");
     }
-    
+
     public static void GoRoomList() {
         SceneManager.LoadScene("RoomList");
     }
-    
+
     public static void GoCreateRoom() {
         SceneManager.LoadScene("CreateRoom");
     }
-    
+
     public static void GoMatch() {
         SceneManager.LoadScene("Match");
     }
@@ -47,7 +47,7 @@ public class Route {
     public static void GoTeam() {
         SceneManager.LoadScene("TeamView");
     }
-    
+
     public static void GoTeamInfoView() {
         SceneManager.LoadScene("TeamInfoView");
     }

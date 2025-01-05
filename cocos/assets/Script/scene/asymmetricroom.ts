@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -353,15 +353,16 @@ export default class AsymmetricRoom extends cc.Component {
     async onDisconnect(playerInfo: PlayerInfo) {
         Util.printLog("玩家掉线");
         if (playerInfo.playerId === global.playerId) {
+            global.isConnected = false;
             // 没有超过重连时间，就进行重连操作
             while (!global.isConnected){
-                // 1秒重连一次，防止并发过大游戏直接卡死
-                await sleep(1000).then();
                 global.room.reconnect().then(() => {
                     Util.printLog("reconnect success");
                 }).catch((error) => {
                     Util.printLog("reconnect err");
                 });
+                // 2秒重连一次，防止并发过大游戏直接卡死
+                await sleep(2000).then();
             }
         }
     }

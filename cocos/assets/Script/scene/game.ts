@@ -59,7 +59,12 @@
  *  2023.06.28-Changed method reConnect
  *  2023.06.28-Deleted method updateBulletFly
  *  2023.06.28-Deleted method sendFireFrame
- *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
+ *  2024.12.16-Changed method reConnect
+ *  2024.12.16-Changed method syncRoomProp
+ *  2024.12.16-Changed method onDisconnect
+ *  2024.12.16-Changed method onStopFrameSync
+ *
+ *             Copyright(C)2024. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 import global from "../../global";
@@ -273,6 +278,7 @@ export default class Game extends cc.Component {
         else {
             roomProperties = {
                 roomType: global.roomType,
+                isOnlineMatch:global.isOnlineMatch,
                 frameSyncPlayerArr: frameSyncPlayerList.players,
                 curFrameId: global.curHandleFrameId
             }
@@ -549,6 +555,7 @@ export default class Game extends cc.Component {
     onDisconnect(playerInfo: PlayerInfo) {
         Util.printLog("玩家掉线");
         if (playerInfo.playerId === global.playerId) {
+            global.isConnected = false;
             Reloading.open("正在重连。。。", false);
             this.reConnect();
         }
@@ -670,11 +677,6 @@ export default class Game extends cc.Component {
             if (global.gameSceneType == GameSceneType.FOR_WATCHER){
                 this.watcherLeaveRoom();
             }else{
-                global.client.room.sendToServer(JSON.stringify({
-                    playerId: global.client.playerId,
-                    type: "GameEnd",
-                    value: Math.random() > 0.5 ? 1 : 0
-                }));
                 cc.director.loadScene("gameend");
             }
         } else {
@@ -779,13 +781,13 @@ export default class Game extends cc.Component {
         } else {
             // 没有超过重连时间，就进行重连操作
             while (!global.isConnected){
-                // 1秒重连一次，防止并发过大游戏直接卡死
-                await sleep(1000).then();
                 global.room.reconnect().then(() => {
                     Util.printLog("reconnect success");
                 }).catch((error) => {
                     Util.printLog("reconnect err");
                 });
+                // 2秒重连一次，防止并发过大游戏直接卡死
+                await sleep(2000).then();
             }
         }
     }

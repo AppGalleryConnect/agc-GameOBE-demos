@@ -23,7 +23,7 @@
  *  2021.12.15-Changed method initPlayer
  *  2023.06.28-Changed method initPlayer
  *  2021.12.15-Changed method onCollisionEnter
- *             Copyright(C)2023. Huawei Technologies Co., Ltd. All rights reserved
+ *             Copyright(C)2024. Huawei Technologies Co., Ltd. All rights reserved
  */
 
 // Learn TypeScript:

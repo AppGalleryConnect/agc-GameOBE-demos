@@ -1,5 +1,5 @@
 /**
- * Copyright 2023. Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright 2024. Huawei Technologies Co., Ltd. All rights reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -89,6 +89,7 @@ export default class Hall extends cc.Component {
         // 绑定在线/组队匹配监听事件
         global.client.onMatch.clear();
         global.client.onMatch((onMatchResponse) => this.onMatch(onMatchResponse));
+        global.client.onKickOff(()=>this.onKickOff())
     }
 
     /**
@@ -223,5 +224,9 @@ export default class Hall extends cc.Component {
         }).catch(() => {
             Util.printLog('取消匹配失败');
         })
+    }
+
+    private onKickOff() {
+        Util.printLog('多端登录，玩家离线');
     }
 }
